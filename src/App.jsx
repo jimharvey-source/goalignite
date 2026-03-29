@@ -75,7 +75,7 @@ function incrementUsage() { try { localStorage.setItem("gi_usage", String(getUsa
 function getSavedGoals() { try { return JSON.parse(localStorage.getItem("gi_saved") || "[]"); } catch { return []; } }
 function saveLocalGoal(data) { try { const s = getSavedGoals(); s.unshift({...data, id: Date.now(), date: new Date().toLocaleDateString("en-GB")}); localStorage.setItem("gi_saved", JSON.stringify(s.slice(0,20))); } catch {} }
 
-const FREE_LIMIT = 9999;
+const FREE_LIMIT = 3;
 
 function Badge({ color, children }) {
   const styles = { blue:{bg:COLORS.blueLight,text:COLORS.blue}, teal:{bg:COLORS.tealLight,text:COLORS.teal}, amber:{bg:COLORS.amberLight,text:COLORS.amber}, green:{bg:COLORS.greenLight,text:COLORS.green}, purple:{bg:"#F5F3FF",text:"#7C3AED"} };
