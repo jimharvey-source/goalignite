@@ -335,6 +335,13 @@ FIVE STEPS:
 4. Make support explicit before it is needed
 5. Build in honest feedback from the start
 
+OUTPUT RULES (apply to every section below, without exception):
+- Plain text only. No markdown of any kind. No asterisks for bold or emphasis, no ## or ### headings, no hyphen, asterisk, or bullet lists, no backticks. If you need to separate points, use short paragraphs, or a numbered list written inline as "1. ... 2. ... 3. ...".
+- No exclamation marks anywhere.
+- No rallying-cry or cheerleading closings. Do not end on lines like "you've got this", "you'll smash it", "this is your chance to shine", or "I believe in you". Close on something concrete and useful: the next step, the first action, or the date you will next speak. Confidence comes from the substance of the plan, not from encouragement bolted on the end.
+- UK English throughout. Plain, direct, warm. Active voice.
+- Write to and about ${form.personName} by first name. Do not feed evaluative ratings back to the reader: never write "your low confidence" or "given your medium skill". Write the implication instead (for example, "this goal will stretch you, so we will keep the check-ins close at first").
+
 YOUR RESPONSE MUST USE EXACTLY THIS FORMAT:
 
 GOAL_TYPE: [SMART, Descriptive, or NLP — one word]
@@ -345,10 +352,10 @@ GOAL_SETTING_ADVICE:
 [Practical guidance for ${form.managerName} using the five steps above. Include goal type rationale, challenge zone implications, coaching mode application, and cadence woven naturally in. Minimum 400 words.]
 
 GOAL_BRIEF:
-[Written goal brief for ${form.personName}. First-person manager voice. Include goal in appropriate format, what success looks like, timeframe, level of challenge, support structure, and what to do if obstacles arise. Warm and confidence-building. Minimum 350 words.]
+[Written goal brief for ${form.personName}. First-person manager voice. Include goal in appropriate format, what success looks like, timeframe, level of challenge, support structure, and what to do if obstacles arise. Warm and plain. The warmth comes from being specific about the support on offer and honest about the challenge, not from praise or encouragement. Minimum 350 words.]
 
 GOAL_TEMPLATE:
-[Write the goal itself — fully drafted in the recommended format (SMART, Descriptive, or NLP Outcome) — but with gaps shown as [square brackets] wherever the manager needs to either ask ${form.personName} for their input, or add more specifics themselves before the goal is finalised. These gaps should be genuinely useful: specific measures, personal motivations, timelines, milestones, resources, or personal commitments that only the person themselves can supply. Add a brief note in italics before the template explaining what it is and how to use it. The template should feel like a working document — something the manager can take into the goal-setting conversation and complete together with ${form.personName}.]`;
+[Write the goal itself — fully drafted in the recommended format (SMART, Descriptive, or NLP Outcome). Fill in everything you can from the inputs above: the title, the description, the deadline, the timeframe, the success criteria, and anything else already supplied. Only leave a gap, shown as [square brackets], where the answer genuinely depends on something the person must supply themselves — a personal measure, their own motivation, a commitment only they can make, a specific milestone date not yet agreed. Do not leave a bracket where the input already gives you the answer. The gaps that remain should be the ones worth discussing together. Begin with a brief note (one or two sentences, plain text, no markdown) explaining what the template is and how to use it. The template should feel like a working document — something the manager can take into the goal-setting conversation and complete together with ${form.personName}.]`;
   };
 
   const generate = async () => {
