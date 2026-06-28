@@ -168,8 +168,8 @@ function UpgradeModal({ onClose, triggered }) {
       <div style={{background:COLORS.white,borderRadius:16,padding:"36px 32px",maxWidth:520,width:"100%"}}>
         <div style={{textAlign:"center",marginBottom:28}}>
           <div style={{width:52,height:52,background:COLORS.amberLight,borderRadius:12,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 16px",fontSize:22}}>★</div>
-          <h2 style={{fontSize:22,fontWeight:700,color:COLORS.navy,margin:"0 0 8px",fontFamily:"sans-serif"}}>{triggered==="limit"?"You have used your 3 free goals":"Unlock GoalIgnite"}</h2>
-          <p style={{fontSize:14,color:COLORS.muted,margin:0,lineHeight:1.6,fontFamily:"sans-serif"}}>Unlimited goals, challenge zone analysis, calendar integration, and full coaching guides.</p>
+          <h2 style={{fontSize:22,fontWeight:700,color:COLORS.navy,margin:"0 0 8px",fontFamily:"sans-serif"}}>{triggered==="limit"?"You have used your 3 free goals":triggered==="pdf"?"Download this as a branded PDF":"Unlock GoalIgnite"}</h2>
+          <p style={{fontSize:14,color:COLORS.muted,margin:0,lineHeight:1.6,fontFamily:"sans-serif"}}>{triggered==="pdf"?"Pro lets you download the complete goal, inputs, challenge zone, cadence, and both the advice and the brief, as a branded PDF for your records.":"Unlimited goals, challenge zone analysis, calendar integration, and full coaching guides."}</p>
         </div>
         <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:20}}>
           {plans.map(plan => (
@@ -409,6 +409,29 @@ GOAL_TEMPLATE:
   };
 
   const resetAll = () => { setGoalCheck(null);setSharpenedGoal("");setGoalAccepted(false);setResult(null);window.scrollTo({top:0,behavior:"smooth"}); };
+
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const downloadPdf = async () => {
+    if (!result) return;
+    if (!isPro) { setUpgradeTrigger("pdf"); setShowUpgrade(true); return; }
+    setDownloadingPdf(true);
+    try {
+      const res = await fetch("/api/generate-pdf", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tool: "goal", form, result }) });
+      if (!res.ok) throw new Error("PDF generation failed");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      const who = result.personName ? ` - ${result.personName}` : "";
+      a.download = `Goal Ignite${who}.pdf`;
+      document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      setError("The PDF could not be generated. Please try again.");
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
   const signOut = async () => { await supabase.auth.signOut();setUser(null);setIsPro(false);try{localStorage.removeItem("gi_pro");}catch{} };
   const remaining = isPro?null:Math.max(0,FREE_LIMIT-usageCount);
 
@@ -599,7 +622,10 @@ GOAL_TEMPLATE:
 
             <div style={{background:COLORS.slateLight,borderRadius:10,padding:"14px 18px",border:`1px solid ${COLORS.border}`,display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:10}}>
               <p style={{fontSize:13,color:COLORS.muted,margin:0,fontFamily:"sans-serif"}}>Both outputs are editable. Adjust to fit your voice before sharing.</p>
-              <button onClick={resetAll} style={{fontSize:13,padding:"7px 16px",background:COLORS.white,border:`1px solid ${COLORS.border}`,borderRadius:8,color:COLORS.navy,cursor:"pointer",fontFamily:"sans-serif",fontWeight:500}}>New goal</button>
+              <div style={{display:"flex",gap:10,alignItems:"center",flexWrap:"wrap"}}>
+                <button onClick={downloadPdf} disabled={downloadingPdf} style={{fontSize:13,padding:"7px 16px",background:"#4CAF50",border:"none",borderRadius:8,color:COLORS.white,cursor:downloadingPdf?"default":"pointer",fontFamily:"sans-serif",fontWeight:600,opacity:downloadingPdf?0.7:1}}>{downloadingPdf?"Preparing PDF...":(isPro?"Download PDF":"Download PDF (Pro)")}</button>
+                <button onClick={resetAll} style={{fontSize:13,padding:"7px 16px",background:COLORS.white,border:`1px solid ${COLORS.border}`,borderRadius:8,color:COLORS.navy,cursor:"pointer",fontFamily:"sans-serif",fontWeight:500}}>New goal</button>
+              </div>
             </div>
           </div>
         )}
