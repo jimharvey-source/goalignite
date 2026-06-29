@@ -340,6 +340,7 @@ OUTPUT RULES (apply to every section below, without exception):
 - No exclamation marks anywhere.
 - No rallying-cry or cheerleading closings. Do not end on lines like "you've got this", "you'll smash it", "this is your chance to shine", or "I believe in you". Close on something concrete and useful: the next step, the first action, or the date you will next speak. Confidence comes from the substance of the plan, not from encouragement bolted on the end.
 - UK English throughout. Plain, direct, warm. Active voice.
+- Do not use em dashes in the output: use a comma, a colon, or a full stop instead. Do not use the words "leverage", "empower", "unlock", "journey", "delve", "robust", "seamless", "inspire", or the phrase "moving forward".
 - Write to and about ${form.personName} by first name. Do not feed evaluative ratings back to the reader: never write "your low confidence" or "given your medium skill". Write the implication instead (for example, "this goal will stretch you, so we will keep the check-ins close at first").
 
 YOUR RESPONSE MUST USE EXACTLY THIS FORMAT:
