@@ -171,6 +171,25 @@ export async function hasSuiteAccess(client) {
   return Boolean(data);
 }
 
+/** A session handed across from another tool, for the cross-tool chain. */
+export function sourceSessionIdFromUrl() {
+  if (typeof window === 'undefined') return null;
+  const id = new URLSearchParams(window.location.search).get('mi_from');
+  return /^[0-9a-f-]{36}$/i.test(id || '') ? id : null;
+}
+
+/** Load one saved session, so a tool can start from what another one produced. */
+export async function loadSession(client, sessionId) {
+  if (!sessionId) return null;
+  const { data } = await client
+    .schema('app')
+    .from('sessions')
+    .select('id, tool, title, person_id, inputs, outputs, occurred_at')
+    .eq('id', sessionId)
+    .maybeSingle();
+  return data || null;
+}
+
 /** Read a person's context so a tool can pre-fill its personal fields. */
 export async function loadPerson(client, personId) {
   if (!personId) return null;
