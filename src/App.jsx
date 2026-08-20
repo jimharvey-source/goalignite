@@ -5,6 +5,7 @@ import {
   loadPerson,
   hasSuiteAccess,
   saveToolSession,
+  parseSharpened,
 } from "./mi-session.js";
 
 const supabase = createSuiteClient({
@@ -317,7 +318,7 @@ Respond in EXACTLY this format:
 
 STATUS: [PASS or FAIL]
 REASON: [One plain sentence.]
-SHARPENED: [If FAIL, rewrite as outcome-focused. If PASS, repeat original unchanged.]`;
+SHARPENED: [If FAIL, rewrite as outcome-focused. If PASS, repeat original unchanged. Give it as a single short paragraph and write nothing after it.]`;
 
   const buildPrompt = (desc) => {
     const zone = getChallengeZone(form.stretchLevel,form.skillLevel,form.confidenceLevel);
@@ -402,7 +403,7 @@ GOAL_TEMPLATE:
         const d=await r.json(); const text=d.choices?.[0]?.message?.content||"";
         const status=(text.match(/STATUS:\s*(PASS|FAIL)/i)?.[1]||"PASS").toUpperCase();
         const reason=text.match(/REASON:\s*(.+)/i)?.[1]?.trim()||"";
-        const sharpened=text.match(/SHARPENED:\s*([\s\S]+)/i)?.[1]?.trim()||form.goalDescription;
+        const sharpened=parseSharpened(text, form.goalDescription);
         if(status==="PASS"){setSharpenedGoal(form.goalDescription);setGoalAccepted(true);await runGenerate(form.goalDescription);}
         else{setGoalCheck({reason,sharpened});setSharpenedGoal(sharpened);setLoading(false);}
       } catch { setError("Something went wrong. Please try again."); setLoading(false); }
