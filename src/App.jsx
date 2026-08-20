@@ -1,10 +1,16 @@
 import { useState, useEffect, useRef } from "react";
-import { createClient } from "@supabase/supabase-js";
+import {
+  createSuiteClient,
+  personIdFromUrl,
+  loadPerson,
+  hasSuiteAccess,
+  saveToolSession,
+} from "./mi-session.js";
 
-const supabase = createClient(
-  "https://fdiitxhgfytvlbtokbok.supabase.co",
-  "sb_publishable_JQMFDaTz5g-2ZlitosUTeA_C9B48-Lc"
-);
+const supabase = createSuiteClient({
+  url: "https://fdiitxhgfytvlbtokbok.supabase.co",
+  anonKey: "sb_publishable_JQMFDaTz5g-2ZlitosUTeA_C9B48-Lc",
+});
 
 const COLORS = {
   navy: "#0F2A4A", navyMid: "#1A3D6B", blue: "#2563EB", blueLight: "#EFF6FF",
@@ -221,6 +227,8 @@ function HistoryPanel({ items, onClose }) {
 export default function GoalIgnite() {
   const [form, setForm] = useState({ managerName:"", personName:"", goalTitle:"", goalDescription:"", successCriteria:"", deadline:"", goalTimeframe:"", stretchLevel:"", skillLevel:"", confidenceLevel:"", goalType:"", saveLocally:false });
   const [result, setResult] = useState(null);
+  const [person, setPerson] = useState(null);
+  const [saveState, setSaveState] = useState("idle");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [showUpgrade, setShowUpgrade] = useState(false);
@@ -245,6 +253,30 @@ export default function GoalIgnite() {
     const {data:{subscription}} = supabase.auth.onAuthStateChange((_,session) => { if(session?.user){setUser(session.user);}else{setUser(null);} });
     return () => subscription.unsubscribe();
   }, []);
+
+  // The suite. Who is signed in, do they have access, and which person are
+  // they working on. Entitlement is one call now, replacing the local flag.
+  useEffect(() => {
+    if (!user) { setPerson(null); return; }
+    let cancelled = false;
+
+    (async () => {
+      const paid = await hasSuiteAccess(supabase);
+      if (!cancelled && paid) setIsPro(true);
+
+      const p = await loadPerson(supabase, personIdFromUrl());
+      if (cancelled || !p) return;
+      setPerson(p);
+
+      setForm(prev => ({
+        ...prev,
+        personName: prev.personName
+          || [p.first_name, p.last_name].filter(Boolean).join(" "),
+      }));
+    })();
+
+    return () => { cancelled = true; };
+  }, [user]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -410,6 +442,34 @@ GOAL_TEMPLATE:
   };
 
   const resetAll = () => { setGoalCheck(null);setSharpenedGoal("");setGoalAccepted(false);setResult(null);window.scrollTo({top:0,behavior:"smooth"}); };
+
+  const saveToPerson = async () => {
+    if (!result || !person) return;
+    setSaveState("saving");
+
+    const { error: saveError } = await saveToolSession(supabase, {
+      tool: "goal",
+      personId: person.id,
+      title: result.goalTitle,
+      inputs: form,
+      outputs: {
+        advice: result.advice,
+        brief: result.brief,
+        goalTemplate: result.goalTemplate,
+        goalType: result.goalType,
+        coachingMode: result.coachingMode,
+        cadence: result.cadence,
+        challengeZone: result.challengeZone,
+      },
+    });
+
+    if (saveError) {
+      setSaveState("idle");
+      setError("That could not be saved to the person record.");
+      return;
+    }
+    setSaveState("saved");
+  };
 
   const [downloadingPdf, setDownloadingPdf] = useState(false);
   const downloadPdf = async () => {
@@ -624,6 +684,11 @@ GOAL_TEMPLATE:
             <div style={{background:COLORS.slateLight,borderRadius:10,padding:"14px 18px",border:`1px solid ${COLORS.border}`,display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:10}}>
               <p style={{fontSize:13,color:COLORS.muted,margin:0,fontFamily:"sans-serif"}}>Both outputs are editable. Adjust to fit your voice before sharing.</p>
               <div style={{display:"flex",gap:10,alignItems:"center",flexWrap:"wrap"}}>
+                {person && (
+                  <button onClick={saveToPerson} disabled={saveState !== "idle"} style={{ fontSize: 13, padding: "7px 16px", background: saveState === "saved" ? "#F0FDF4" : "#0F2A4A", border: saveState === "saved" ? "1px solid #16A34A" : "none", borderRadius: 8, color: saveState === "saved" ? "#16A34A" : "#fff", cursor: saveState === "idle" ? "pointer" : "default", fontFamily: "sans-serif", fontWeight: 600 }}>
+                    {saveState === "saved" ? `Saved to ${person.first_name}'s record` : saveState === "saving" ? "Saving..." : `Save to ${person.first_name}'s record`}
+                  </button>
+                )}
                 <button onClick={downloadPdf} disabled={downloadingPdf} style={{fontSize:13,padding:"7px 16px",background:"#4CAF50",border:"none",borderRadius:8,color:COLORS.white,cursor:downloadingPdf?"default":"pointer",fontFamily:"sans-serif",fontWeight:600,opacity:downloadingPdf?0.7:1}}>{downloadingPdf?"Preparing PDF...":(isPro?"Download PDF":"Download PDF (Pro)")}</button>
                 <button onClick={resetAll} style={{fontSize:13,padding:"7px 16px",background:COLORS.white,border:`1px solid ${COLORS.border}`,borderRadius:8,color:COLORS.navy,cursor:"pointer",fontFamily:"sans-serif",fontWeight:500}}>New goal</button>
               </div>
