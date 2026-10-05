@@ -13,17 +13,45 @@ const supabase = createSuiteClient({
   anonKey: "sb_publishable_JQMFDaTz5g-2ZlitosUTeA_C9B48-Lc",
 });
 
+// Management Ignition design system, 4 October 2026. Same names, new values.
+// Teal (accent) is the method speaking: never a button fill, never a link.
+// The tool colour is an identity mark only: the 3px top line.
 const COLORS = {
-  navy: "#0F2A4A", navyMid: "#1A3D6B", blue: "#2563EB", blueLight: "#EFF6FF",
-  teal: "#4CAF50", tealLight: "#F1F8E9", slate: "#64748B", slateLight: "#F8FAFC",
-  border: "#E2E8F0", text: "#0F172A", muted: "#64748B", white: "#FFFFFF",
-  amber: "#D97706", amberLight: "#FFFBEB", red: "#DC2626", green: "#16A34A", greenLight: "#F0FDF4",
+  navy: "#1b2a4a",        // ink: headlines, primary buttons
+  navyMid: "#2a3d63",     // ink-2: body copy
+  blue: "#2a3d63",
+  blueLight: "#eef2f6",
+  teal: "#0e7c7b",        // accent (was Goal green)
+  tealLight: "#e9f3f3",   // accent-soft; text on it is ink
+  slate: "#5d6b7f",
+  slateLight: "#f6f8fb",  // canvas
+  border: "#e2e7ee",      // rule
+  text: "#1b2a4a",
+  muted: "#5d6b7f",
+  white: "#ffffff",
+  amber: "#8a5300",       // warn
+  amberLight: "#fff3e0",
+  red: "#b3261e",         // danger
+  green: "#1e6b45",
+  greenLight: "#e8f4ec",
+  canvas: "#f6f8fb",
+  sunk: "#eef2f6",
+  tool: "#4caf50",        // Goal Ignite
 };
 
+// Names arrive as typed. "joyce adams" shows as "Joyce Adams". Display only.
+const displayName = (s) => String(s || "").trim().split(/\s+/).map(w => w ? w.charAt(0).toUpperCase() + w.slice(1) : w).join(" ");
+
+const FONT = {
+  sans: '"Instrument Sans", -apple-system, "SF Pro Text", "Segoe UI", Helvetica, Arial, sans-serif',
+  spoken: 'Fraunces, "Iowan Old Style", Georgia, serif',
+};
+const SHADOW = "0 1px 2px rgba(27,42,74,0.05), 0 18px 44px -28px rgba(27,42,74,0.30)";
+
 const GOAL_TYPE_INFO = {
-  SMART: { label: "SMART Goal", icon: "🎯", desc: "Specific, Measurable, Achievable, Relevant, Timed. Best for structured thinkers and short-to-medium term goals.", color: COLORS.blue, colorLight: COLORS.blueLight },
-  Descriptive: { label: "Descriptive Goal", icon: "🖼️", desc: "A vivid written vision of the desired future state. Best for creative thinkers and longer-term ambitions.", color: COLORS.teal, colorLight: COLORS.tealLight },
-  NLP: { label: "NLP Outcome", icon: "🧭", desc: "Issue → Outcome → Resources → Objections. Best for people who need both vision and structured accountability.", color: "#7C3AED", colorLight: "#F5F3FF" },
+  SMART: { label: "SMART Goal", icon: "", desc: "Specific, Measurable, Achievable, Relevant, Timed. Best for structured thinkers and short-to-medium term goals.", color: COLORS.blue, colorLight: COLORS.blueLight },
+  Descriptive: { label: "Descriptive Goal", icon: "", desc: "A vivid written vision of the desired future state. Best for creative thinkers and longer-term ambitions.", color: COLORS.teal, colorLight: COLORS.tealLight },
+  NLP: { label: "NLP Outcome", icon: "", desc: "Issue → Outcome → Resources → Objections. Best for people who need both vision and structured accountability.", color: COLORS.navyMid, colorLight: COLORS.sunk },
 };
 
 function getChallengeZone(stretchLevel, skillLevel, confidenceLevel) {
@@ -31,12 +59,12 @@ function getChallengeZone(stretchLevel, skillLevel, confidenceLevel) {
   const highConf = confidenceLevel === "High", medConf = confidenceLevel === "Medium", lowConf = confidenceLevel === "Low";
   const highStretch = stretchLevel === "High", medStretch = stretchLevel === "Medium";
 
-  if (highStretch && highSkill && highConf) return { zone: "Growth Zone", color: COLORS.green, colorLight: COLORS.greenLight, icon: "🚀", summary: "High challenge, high capability. This is the ideal stretch — ambitious enough to drive real development, achievable enough to succeed with commitment.", managerGuidance: "This person is ready for a genuine stretch. Set the goal boldly, agree a clear success picture, and then give them the room to work. Your role here is available coach, not close supervisor. Check in regularly but resist the urge to direct.", supportLevel: "High support available, applied lightly." };
-  if (highStretch && (medSkill || highSkill) && (medConf || highConf)) return { zone: "Growth Zone", color: COLORS.green, colorLight: COLORS.greenLight, icon: "🚀", summary: "Good capability meeting genuine stretch. Strong development territory — the goal will push them, and with the right support they will grow into it.", managerGuidance: "A real stretch for a capable person. Set the goal clearly and discuss honestly that it is meant to push them. Build in regular check-ins and make it easy to raise blockers early.", supportLevel: "Regular structured support. Weekly check-ins, clear escalation path." };
-  if (highStretch && (!highSkill || !highConf)) return { zone: "Danger Zone", color: COLORS.red, colorLight: "#FEF2F2", icon: "⚠️", summary: "High stretch combined with lower skill or confidence creates real risk. Without active support, this goal is likely to damage confidence rather than build it.", managerGuidance: "Think carefully before proceeding with this level of stretch. If you do, the support structure must be intensive. Consider stepping down the stretch level and building up progressively.", supportLevel: "Intensive support required. Consider reducing stretch level first." };
-  if (medStretch && (highSkill || medSkill) && (highConf || medConf)) return { zone: "Growth Zone", color: COLORS.green, colorLight: COLORS.greenLight, icon: "✅", summary: "Moderate stretch matched well to capability. Solid development goal — enough challenge to produce growth without excessive risk.", managerGuidance: "Good balance. Set the goal clearly, agree the success criteria, and give them the space to work. Regular light-touch check-ins are enough.", supportLevel: "Light-touch support. Fortnightly reviews, available on request." };
-  if (!highStretch && !medStretch) return { zone: "Coasting", color: COLORS.amber, colorLight: COLORS.amberLight, icon: "😐", summary: "Low stretch for a capable person produces compliance, not growth. They may complete the goal, but they will not develop from it — and they will notice.", managerGuidance: "Raise the bar. A low-stretch goal for a capable person is a missed development opportunity and can signal that you underestimate them.", supportLevel: "Low support needed — but consider whether the goal itself needs revisiting." };
-  return { zone: "Moderate Challenge", color: COLORS.teal, colorLight: COLORS.tealLight, icon: "📈", summary: "Reasonable challenge level. Not quite the growth zone but solid and productive. Consider whether you could push the stretch slightly.", managerGuidance: "A reasonable goal. Consider whether you could push the stretch level slightly without tipping into the danger zone.", supportLevel: "Moderate support. Weekly light check-ins, available for ad hoc questions." };
+  if (highStretch && highSkill && highConf) return { zone: "Growth Zone", color: COLORS.green, colorLight: COLORS.greenLight, icon: "", summary: "High challenge, high capability. This is the ideal stretch — ambitious enough to drive real development, achievable enough to succeed with commitment.", managerGuidance: "This person is ready for a genuine stretch. Set the goal boldly, agree a clear success picture, and then give them the room to work. Your role here is available coach, not close supervisor. Check in regularly but resist the urge to direct.", supportLevel: "High support available, applied lightly." };
+  if (highStretch && (medSkill || highSkill) && (medConf || highConf)) return { zone: "Growth Zone", color: COLORS.green, colorLight: COLORS.greenLight, icon: "", summary: "Good capability meeting genuine stretch. Strong development territory — the goal will push them, and with the right support they will grow into it.", managerGuidance: "A real stretch for a capable person. Set the goal clearly and discuss honestly that it is meant to push them. Build in regular check-ins and make it easy to raise blockers early.", supportLevel: "Regular structured support. Weekly check-ins, clear escalation path." };
+  if (highStretch && (!highSkill || !highConf)) return { zone: "Danger Zone", color: COLORS.red, colorLight: "#FEF2F2", icon: "", summary: "High stretch combined with lower skill or confidence creates real risk. Without active support, this goal is likely to damage confidence rather than build it.", managerGuidance: "Think carefully before proceeding with this level of stretch. If you do, the support structure must be intensive. Consider stepping down the stretch level and building up progressively.", supportLevel: "Intensive support required. Consider reducing stretch level first." };
+  if (medStretch && (highSkill || medSkill) && (highConf || medConf)) return { zone: "Growth Zone", color: COLORS.green, colorLight: COLORS.greenLight, icon: "", summary: "Moderate stretch matched well to capability. Solid development goal — enough challenge to produce growth without excessive risk.", managerGuidance: "Good balance. Set the goal clearly, agree the success criteria, and give them the space to work. Regular light-touch check-ins are enough.", supportLevel: "Light-touch support. Fortnightly reviews, available on request." };
+  if (!highStretch && !medStretch) return { zone: "Coasting", color: COLORS.amber, colorLight: COLORS.amberLight, icon: "", summary: "Low stretch for a capable person produces compliance, not growth. They may complete the goal, but they will not develop from it — and they will notice.", managerGuidance: "Raise the bar. A low-stretch goal for a capable person is a missed development opportunity and can signal that you underestimate them.", supportLevel: "Low support needed — but consider whether the goal itself needs revisiting." };
+  return { zone: "Moderate Challenge", color: COLORS.teal, colorLight: COLORS.tealLight, icon: "", summary: "Reasonable challenge level. Not quite the growth zone but solid and productive. Consider whether you could push the stretch slightly.", managerGuidance: "A reasonable goal. Consider whether you could push the stretch level slightly without tipping into the danger zone.", supportLevel: "Moderate support. Weekly light check-ins, available for ad hoc questions." };
 }
 
 function getCadenceGuidance(stretchLevel, skillLevel, confidenceLevel, goalTimeframe) {
@@ -85,40 +113,42 @@ function saveLocalGoal(data) { try { const s = getSavedGoals(); s.unshift({...da
 const FREE_LIMIT = 3;
 
 function Badge({ color, children }) {
-  const styles = { blue:{bg:COLORS.blueLight,text:COLORS.blue}, teal:{bg:COLORS.tealLight,text:COLORS.teal}, amber:{bg:COLORS.amberLight,text:COLORS.amber}, green:{bg:COLORS.greenLight,text:COLORS.green}, purple:{bg:"#F5F3FF",text:"#7C3AED"} };
+  const styles = { blue:{bg:COLORS.sunk,text:COLORS.navyMid}, teal:{bg:COLORS.tealLight,text:COLORS.navy}, amber:{bg:COLORS.amberLight,text:COLORS.amber}, green:{bg:COLORS.greenLight,text:COLORS.green}, purple:{bg:COLORS.sunk,text:COLORS.navyMid} };
   const s = styles[color] || styles.blue;
-  return <span style={{background:s.bg,color:s.text,fontSize:11,fontWeight:600,padding:"3px 10px",borderRadius:20,letterSpacing:"0.04em",textTransform:"uppercase"}}>{children}</span>;
+  return <span style={{background:s.bg,color:s.text,fontSize:12,fontWeight:600,padding:"3px 10px",borderRadius:999,letterSpacing:"0.01em",fontFamily:FONT.sans}}>{children}</span>;
 }
 
-function OutputBox({ title, content, badge }) {
+function OutputBox({ title, content, badge, spoken }) {
   const [copied, setCopied] = useState(false);
   const [text, setText] = useState(content);
   useEffect(() => { setText(content); }, [content]);
   const copy = () => { navigator.clipboard.writeText(text).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); }); };
-  const emailIt = () => { const s=encodeURIComponent(`GoalIgnite: ${title}`), b=encodeURIComponent(text), a=document.createElement("a"); a.href=`mailto:?subject=${s}&body=${b}`; a.target="_blank"; document.body.appendChild(a); a.click(); document.body.removeChild(a); };
-  const shareIt = async () => { if (navigator.share) { try { await navigator.share({title:`GoalIgnite: ${title}`,text}); } catch { emailIt(); } } else { emailIt(); } };
+  const emailIt = () => { const s=encodeURIComponent(`Goal Ignite: ${title}`), b=encodeURIComponent(text), a=document.createElement("a"); a.href=`mailto:?subject=${s}&body=${b}`; a.target="_blank"; document.body.appendChild(a); a.click(); document.body.removeChild(a); };
+  const shareIt = async () => { if (navigator.share) { try { await navigator.share({title:`Goal Ignite: ${title}`,text}); } catch { emailIt(); } } else { emailIt(); } };
   return (
-    <div style={{background:COLORS.white,border:`1px solid ${COLORS.border}`,borderRadius:12,overflow:"hidden",marginBottom:16}}>
-      <div style={{padding:"14px 20px",borderBottom:`1px solid ${COLORS.border}`,display:"flex",justifyContent:"space-between",alignItems:"center",background:COLORS.slateLight}}>
-        <div style={{display:"flex",alignItems:"center",gap:10}}>
-          <span style={{fontSize:14,fontWeight:600,color:COLORS.navy}}>{title}</span>
+    <div style={{background:COLORS.white,border:`1px solid ${COLORS.border}`,borderRadius:10,overflow:"hidden",marginBottom:16}}>
+      <div style={{padding:"14px 20px",borderBottom:`1px solid ${COLORS.border}`,display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,flexWrap:"wrap",background:COLORS.white}}>
+        <div style={{display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
+          <span style={{fontSize:16,fontWeight:600,color:COLORS.navy}}>{title}</span>
           {badge && <Badge color={badge.color}>{badge.label}</Badge>}
         </div>
         <div style={{display:"flex",gap:8}}>
-          <button onClick={copy} style={{fontSize:12,padding:"5px 12px",border:`1px solid ${COLORS.border}`,borderRadius:6,background:copied?COLORS.greenLight:COLORS.white,color:copied?COLORS.green:COLORS.slate,cursor:"pointer",fontWeight:500}}>{copied?"Copied":"Copy"}</button>
-          <button onClick={shareIt} style={{fontSize:12,padding:"5px 12px",border:`1px solid ${COLORS.border}`,borderRadius:6,background:COLORS.white,color:COLORS.slate,cursor:"pointer",fontWeight:500}}>Share</button>
+          <button onClick={copy} style={{fontSize:13,minHeight:36,padding:"0 14px",border:`1px solid ${COLORS.border}`,borderRadius:10,background:copied?COLORS.greenLight:COLORS.white,color:copied?COLORS.green:COLORS.navy,cursor:"pointer",fontWeight:500,fontFamily:FONT.sans}}>{copied?"Copied":"Copy"}</button>
+          <button onClick={shareIt} style={{fontSize:13,minHeight:36,padding:"0 14px",border:`1px solid ${COLORS.border}`,borderRadius:10,background:COLORS.white,color:COLORS.navy,cursor:"pointer",fontWeight:500,fontFamily:FONT.sans}}>Share</button>
         </div>
       </div>
-      <textarea value={text} onChange={e=>setText(e.target.value)} style={{width:"100%",minHeight:280,padding:"16px 20px",border:"none",outline:"none",resize:"vertical",fontSize:13.5,lineHeight:1.7,color:COLORS.text,fontFamily:"Georgia, serif",boxSizing:"border-box",background:COLORS.white}} />
+      <textarea value={text} onChange={e=>setText(e.target.value)} style={spoken
+        ? {width:"100%",minHeight:320,padding:"24px 28px",border:"none",outline:"none",resize:"vertical",fontSize:19,lineHeight:"30px",color:COLORS.navy,fontFamily:FONT.spoken,fontVariationSettings:'"SOFT" 0, "WONK" 0',fontWeight:400,boxSizing:"border-box",background:COLORS.white}
+        : {width:"100%",minHeight:280,padding:"20px 24px",border:"none",outline:"none",resize:"vertical",fontSize:15,lineHeight:1.65,color:COLORS.navyMid,fontFamily:FONT.sans,boxSizing:"border-box",background:COLORS.white}} />
     </div>
   );
 }
 
 function TextField({ label, value, onChange, placeholder, multiline, required }) {
-  const style = {width:"100%",padding:"9px 12px",border:`1px solid ${COLORS.border}`,borderRadius:8,fontSize:14,color:COLORS.text,background:COLORS.white,outline:"none",boxSizing:"border-box",fontFamily:"inherit"};
+  const style = {width:"100%",minHeight:44,padding:"10px 16px",border:`1px solid ${COLORS.border}`,borderRadius:10,fontSize:15,color:COLORS.text,background:COLORS.white,boxSizing:"border-box",fontFamily:FONT.sans};
   return (
     <div style={{marginBottom:16}}>
-      <label style={{display:"block",fontSize:13,fontWeight:600,color:COLORS.navy,marginBottom:6}}>{label}{required && <span style={{color:COLORS.red}}> *</span>}</label>
+      {label && <label style={{display:"block",fontSize:13,fontWeight:600,letterSpacing:"0.01em",color:COLORS.muted,marginBottom:8}}>{label}{required && <span style={{color:COLORS.red}}> *</span>}</label>}
       {multiline ? <textarea value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder} rows={3} style={{...style,resize:"vertical"}} /> : <input type="text" value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder} style={style} />}
     </div>
   );
@@ -127,10 +157,10 @@ function TextField({ label, value, onChange, placeholder, multiline, required })
 function ToggleGroup({ label, value, onChange, options }) {
   return (
     <div style={{marginBottom:16}}>
-      <label style={{display:"block",fontSize:13,fontWeight:600,color:COLORS.navy,marginBottom:8}}>{label}</label>
+      <label style={{display:"block",fontSize:13,fontWeight:600,letterSpacing:"0.01em",color:COLORS.muted,marginBottom:8}}>{label}</label>
       <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
         {options.map(o => (
-          <button key={o.value} onClick={() => onChange(o.value)} style={{padding:"7px 16px",border:`1.5px solid ${value===o.value?COLORS.blue:COLORS.border}`,borderRadius:8,background:value===o.value?COLORS.blueLight:COLORS.white,color:value===o.value?COLORS.blue:COLORS.slate,fontSize:13,fontWeight:value===o.value?600:400,cursor:"pointer",transition:"all 0.15s"}}>{o.label}</button>
+          <button key={o.value} onClick={() => onChange(o.value)} aria-pressed={value===o.value} style={{minHeight:40,padding:"0 18px",border:`1px solid ${value===o.value?COLORS.navy:COLORS.border}`,boxShadow:value===o.value?`inset 0 0 0 1px ${COLORS.navy}`:"none",borderRadius:10,background:value===o.value?COLORS.sunk:COLORS.white,color:COLORS.navy,fontSize:14,fontWeight:value===o.value?600:400,cursor:"pointer",fontFamily:FONT.sans,transition:"all 0.15s"}}>{o.label}</button>
         ))}
       </div>
     </div>
@@ -141,24 +171,22 @@ function AuthModal({ onClose }) {
   const [email, setEmail] = useState(""), [sent, setSent] = useState(false), [loading, setLoading] = useState(false), [error, setError] = useState("");
   const send = async () => { if (!email.trim()) { setError("Please enter your email."); return; } setLoading(true); setError(""); const {error:e} = await supabase.auth.signInWithOtp({email:email.trim(),options:{emailRedirectTo:window.location.origin}}); if(e){setError(e.message);setLoading(false);return;} setSent(true); setLoading(false); };
   return (
-    <div style={{position:"fixed",inset:0,background:"rgba(15,42,74,0.85)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:20}}>
-      <div style={{background:COLORS.white,borderRadius:16,padding:"36px 32px",maxWidth:420,width:"100%"}}>
+    <div style={{position:"fixed",inset:0,background:"rgba(27,42,74,0.55)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:20}}>
+      <div style={{background:COLORS.white,borderRadius:22,boxShadow:SHADOW,padding:"40px 36px",maxWidth:420,width:"100%"}}>
         {!sent ? (<>
           <div style={{textAlign:"center",marginBottom:24}}>
-            <div style={{width:52,height:52,background:COLORS.tealLight,borderRadius:12,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 16px",fontSize:22}}>✉️</div>
-            <h2 style={{fontSize:20,fontWeight:700,color:COLORS.navy,margin:"0 0 8px",fontFamily:"sans-serif"}}>Sign in to GoalIgnite</h2>
-            <p style={{fontSize:14,color:COLORS.muted,margin:0,fontFamily:"sans-serif",lineHeight:1.6}}>Enter your email and we will send you a magic link. No password needed.</p>
+            <h2 style={{fontSize:20,fontWeight:700,color:COLORS.navy,margin:"0 0 8px",fontFamily:FONT.sans}}>Sign in to Goal Ignite</h2>
+            <p style={{fontSize:14,color:COLORS.muted,margin:0,fontFamily:FONT.sans,lineHeight:1.6}}>Enter your email and we will send you a magic link. No password needed.</p>
           </div>
-          <input type="email" value={email} onChange={e=>setEmail(e.target.value)} onKeyDown={e=>e.key==="Enter"&&send()} placeholder="your@email.com" style={{width:"100%",padding:"10px 14px",border:`1px solid ${COLORS.border}`,borderRadius:8,fontSize:14,color:COLORS.text,outline:"none",boxSizing:"border-box",fontFamily:"sans-serif",marginBottom:12}} />
-          {error && <p style={{fontSize:13,color:COLORS.red,margin:"0 0 10px",fontFamily:"sans-serif"}}>{error}</p>}
-          <button onClick={send} disabled={loading} style={{width:"100%",padding:"11px",background:COLORS.navy,color:"#fff",border:"none",borderRadius:8,fontSize:14,fontWeight:600,cursor:loading?"not-allowed":"pointer",fontFamily:"sans-serif",marginBottom:10}}>{loading?"Sending...":"Send magic link"}</button>
-          <button onClick={onClose} style={{width:"100%",background:"none",border:"none",color:COLORS.muted,fontSize:13,cursor:"pointer",padding:4,fontFamily:"sans-serif"}}>Cancel</button>
+          <input type="email" value={email} onChange={e=>setEmail(e.target.value)} onKeyDown={e=>e.key==="Enter"&&send()} placeholder="your@email.com" style={{width:"100%",minHeight:44,padding:"10px 16px",border:`1px solid ${COLORS.border}`,borderRadius:10,fontSize:15,color:COLORS.text,boxSizing:"border-box",fontFamily:FONT.sans,marginBottom:12}} />
+          {error && <p style={{fontSize:13,color:COLORS.red,margin:"0 0 10px",fontFamily:FONT.sans}}>{error}</p>}
+          <button onClick={send} disabled={loading} style={{width:"100%",minHeight:44,padding:"0 24px",background:COLORS.navy,color:"#fff",border:"none",borderRadius:10,fontSize:15,fontWeight:600,cursor:loading?"not-allowed":"pointer",fontFamily:FONT.sans,marginBottom:10}}>{loading?"Sending...":"Send magic link"}</button>
+          <button onClick={onClose} style={{width:"100%",background:"none",border:"none",color:COLORS.muted,fontSize:13,cursor:"pointer",padding:4,fontFamily:FONT.sans}}>Cancel</button>
         </>) : (
           <div style={{textAlign:"center"}}>
-            <div style={{fontSize:40,marginBottom:16}}>📬</div>
-            <h2 style={{fontSize:20,fontWeight:700,color:COLORS.navy,margin:"0 0 10px",fontFamily:"sans-serif"}}>Check your email</h2>
-            <p style={{fontSize:14,color:COLORS.muted,lineHeight:1.6,margin:"0 0 20px",fontFamily:"sans-serif"}}>We sent a magic link to <strong>{email}</strong>.</p>
-            <button onClick={onClose} style={{background:"none",border:"none",color:COLORS.muted,fontSize:13,cursor:"pointer",fontFamily:"sans-serif"}}>Close</button>
+            <h2 style={{fontSize:20,fontWeight:700,color:COLORS.navy,margin:"0 0 10px",fontFamily:FONT.sans}}>Check your email</h2>
+            <p style={{fontSize:14,color:COLORS.muted,lineHeight:1.6,margin:"0 0 20px",fontFamily:FONT.sans}}>We sent a magic link to <strong>{email}</strong>.</p>
+            <button onClick={onClose} style={{background:"none",border:"none",color:COLORS.muted,fontSize:13,cursor:"pointer",fontFamily:FONT.sans}}>Close</button>
           </div>
         )}
       </div>
@@ -168,34 +196,33 @@ function AuthModal({ onClose }) {
 
 function UpgradeModal({ onClose, triggered }) {
   const [loadingPlan, setLoadingPlan] = useState(null), [checkoutError, setCheckoutError] = useState("");
-  const plans = [{id:"monthly",name:"Monthly",price:"£4.99",period:"/month",desc:"Full access, cancel anytime.",highlight:false},{id:"annual",name:"Annual",price:"£59.99",period:"/year",desc:"Best value — two months free.",highlight:true},{id:"lifetime",name:"Lifetime",price:"£49.99",period:"one-off",desc:"Pay once, use forever.",highlight:false}];
+  const plans = [{id:"monthly",name:"Monthly",price:"£4.99",period:"/month",desc:"Full access, cancel anytime.",highlight:false},{id:"annual",name:"Annual",price:"£59.99",period:"/year",desc:"Best value: two months free.",highlight:true},{id:"lifetime",name:"Lifetime",price:"£49.99",period:"one-off",desc:"Pay once, use forever.",highlight:false}];
   const handleCheckout = async (planId) => { setLoadingPlan(planId); setCheckoutError(""); try { const r=await fetch("/api/stripe-checkout",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({plan:planId,origin:window.location.origin})}); const d=await r.json(); if(d.url){window.location.href=d.url;}else{setCheckoutError("Something went wrong.");setLoadingPlan(null);} } catch { setCheckoutError("Something went wrong.");setLoadingPlan(null); } };
   return (
-    <div style={{position:"fixed",inset:0,background:"rgba(15,42,74,0.85)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:20}}>
-      <div style={{background:COLORS.white,borderRadius:16,padding:"36px 32px",maxWidth:520,width:"100%"}}>
+    <div style={{position:"fixed",inset:0,background:"rgba(27,42,74,0.55)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:20}}>
+      <div style={{background:COLORS.white,borderRadius:22,boxShadow:SHADOW,padding:"40px 36px",maxWidth:520,width:"100%"}}>
         <div style={{textAlign:"center",marginBottom:28}}>
-          <div style={{width:52,height:52,background:COLORS.amberLight,borderRadius:12,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 16px",fontSize:22}}>★</div>
-          <h2 style={{fontSize:22,fontWeight:700,color:COLORS.navy,margin:"0 0 8px",fontFamily:"sans-serif"}}>{triggered==="limit"?"You have used your 3 free goals":triggered==="pdf"?"Download this as a branded PDF":"Unlock GoalIgnite"}</h2>
-          <p style={{fontSize:14,color:COLORS.muted,margin:0,lineHeight:1.6,fontFamily:"sans-serif"}}>{triggered==="pdf"?"Pro lets you download the complete goal, inputs, challenge zone, cadence, and both the advice and the brief, as a branded PDF for your records.":"Unlimited goals, challenge zone analysis, calendar integration, and full coaching guides."}</p>
+          <h2 style={{fontSize:22,fontWeight:700,color:COLORS.navy,margin:"0 0 8px",fontFamily:FONT.sans}}>{triggered==="limit"?"You have used your 3 free goals":triggered==="pdf"?"Download this as a branded PDF":"Goal Ignite Pro"}</h2>
+          <p style={{fontSize:14,color:COLORS.muted,margin:0,lineHeight:1.6,fontFamily:FONT.sans}}>{triggered==="pdf"?"Pro lets you download the complete goal, inputs, challenge zone, cadence, and both the advice and the brief, as a branded PDF for your records.":"Unlimited goals, challenge zone analysis, calendar integration, and full coaching guides."}</p>
         </div>
         <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:20}}>
           {plans.map(plan => (
-            <div key={plan.id} style={{border:`${plan.highlight?2:1}px solid ${plan.highlight?COLORS.teal:COLORS.border}`,borderRadius:10,padding:"14px 18px",display:"flex",alignItems:"center",justifyContent:"space-between",background:plan.highlight?COLORS.tealLight:COLORS.white,gap:12,flexWrap:"wrap"}}>
+            <div key={plan.id} style={{border:`1px solid ${plan.highlight?COLORS.navy:COLORS.border}`,boxShadow:plan.highlight?`inset 0 0 0 1px ${COLORS.navy}`:"none",borderRadius:10,padding:"14px 18px",display:"flex",alignItems:"center",justifyContent:"space-between",background:COLORS.white,gap:12,flexWrap:"wrap"}}>
               <div style={{flex:1}}>
-                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:2}}><span style={{fontSize:14,fontWeight:700,color:COLORS.navy,fontFamily:"sans-serif"}}>{plan.name}</span>{plan.highlight&&<Badge color="teal">Most popular</Badge>}</div>
-                <p style={{fontSize:12.5,color:COLORS.muted,margin:0,fontFamily:"sans-serif"}}>{plan.desc}</p>
+                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:2}}><span style={{fontSize:14,fontWeight:700,color:COLORS.navy,fontFamily:FONT.sans}}>{plan.name}</span>{plan.highlight&&<Badge color="teal">Most popular</Badge>}</div>
+                <p style={{fontSize:12.5,color:COLORS.muted,margin:0,fontFamily:FONT.sans}}>{plan.desc}</p>
               </div>
               <div style={{display:"flex",alignItems:"center",gap:12,flexShrink:0}}>
-                <div style={{textAlign:"right"}}><span style={{fontSize:18,fontWeight:700,color:COLORS.navy,fontFamily:"sans-serif"}}>{plan.price}</span><span style={{fontSize:12,color:COLORS.muted,fontFamily:"sans-serif"}}> {plan.period}</span></div>
-                <button onClick={()=>handleCheckout(plan.id)} disabled={!!loadingPlan} style={{padding:"8px 18px",background:plan.highlight?COLORS.teal:COLORS.navy,color:"#fff",border:"none",borderRadius:8,fontSize:13,fontWeight:600,cursor:loadingPlan?"not-allowed":"pointer",fontFamily:"sans-serif",opacity:loadingPlan&&loadingPlan!==plan.id?0.5:1,minWidth:80}}>{loadingPlan===plan.id?"...":"Select"}</button>
+                <div style={{textAlign:"right"}}><span style={{fontSize:18,fontWeight:700,color:COLORS.navy,fontFamily:FONT.sans}}>{plan.price}</span><span style={{fontSize:12,color:COLORS.muted,fontFamily:FONT.sans}}> {plan.period}</span></div>
+                <button onClick={()=>handleCheckout(plan.id)} disabled={!!loadingPlan} style={{minHeight:40,padding:"0 18px",background:plan.highlight?COLORS.navy:COLORS.white,color:plan.highlight?"#fff":COLORS.navy,border:`1px solid ${plan.highlight?COLORS.navy:COLORS.border}`,borderRadius:10,fontSize:13,fontWeight:600,cursor:loadingPlan?"not-allowed":"pointer",fontFamily:FONT.sans,opacity:loadingPlan&&loadingPlan!==plan.id?0.5:1,minWidth:80}}>{loadingPlan===plan.id?"...":"Select"}</button>
               </div>
             </div>
           ))}
         </div>
-        {checkoutError && <p style={{fontSize:13,color:COLORS.red,textAlign:"center",margin:"0 0 12px",fontFamily:"sans-serif"}}>{checkoutError}</p>}
+        {checkoutError && <p style={{fontSize:13,color:COLORS.red,textAlign:"center",margin:"0 0 12px",fontFamily:FONT.sans}}>{checkoutError}</p>}
         <div style={{borderTop:`1px solid ${COLORS.border}`,paddingTop:16,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-          <p style={{fontSize:12,color:COLORS.muted,margin:0,fontFamily:"sans-serif"}}>Secure payment by Stripe. Cancel anytime.</p>
-          <button onClick={onClose} style={{background:"none",border:"none",color:COLORS.muted,fontSize:13,cursor:"pointer",padding:4,fontFamily:"sans-serif"}}>Maybe later</button>
+          <p style={{fontSize:12,color:COLORS.muted,margin:0,fontFamily:FONT.sans}}>Secure payment by Stripe. Cancel anytime.</p>
+          <button onClick={onClose} style={{background:"none",border:"none",color:COLORS.muted,fontSize:13,cursor:"pointer",padding:4,fontFamily:FONT.sans}}>Maybe later</button>
         </div>
       </div>
     </div>
@@ -204,11 +231,11 @@ function UpgradeModal({ onClose, triggered }) {
 
 function HistoryPanel({ items, onClose }) {
   return (
-    <div style={{position:"fixed",inset:0,background:"rgba(15,42,74,0.7)",display:"flex",alignItems:"flex-start",justifyContent:"flex-end",zIndex:1000}}>
+    <div style={{position:"fixed",inset:0,background:"rgba(27,42,74,0.45)",display:"flex",alignItems:"flex-start",justifyContent:"flex-end",zIndex:1000}}>
       <div style={{background:COLORS.white,width:"100%",maxWidth:460,height:"100vh",overflowY:"auto",padding:"28px 24px"}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24}}>
           <h3 style={{fontSize:18,fontWeight:700,color:COLORS.navy,margin:0}}>Saved goals</h3>
-          <button onClick={onClose} style={{background:"none",border:"none",fontSize:20,cursor:"pointer",color:COLORS.slate}}>×</button>
+          <button onClick={onClose} aria-label="Close" style={{background:"none",border:"none",fontSize:24,minWidth:44,minHeight:44,cursor:"pointer",color:COLORS.navy,fontFamily:FONT.sans}}>×</button>
         </div>
         {items.length===0 ? <p style={{color:COLORS.muted,fontSize:14}}>No saved goals yet.</p> : items.map(item => (
           <div key={item.id} style={{border:`1px solid ${COLORS.border}`,borderRadius:10,padding:"14px 16px",marginBottom:12}}>
@@ -216,7 +243,7 @@ function HistoryPanel({ items, onClose }) {
               <span style={{fontSize:14,fontWeight:600,color:COLORS.navy}}>{item.goalTitle||"Untitled goal"}</span>
               <span style={{fontSize:12,color:COLORS.muted}}>{item.date||new Date(item.created_at).toLocaleDateString("en-GB")}</span>
             </div>
-            <p style={{fontSize:13,color:COLORS.muted,margin:"0 0 6px"}}>{item.managerName} ➜ {item.personName}</p>
+            <p style={{fontSize:13,color:COLORS.muted,margin:"0 0 6px"}}>{item.managerName} to {item.personName}</p>
             {item.goalType && <Badge color="teal">{item.goalType}</Badge>}
           </div>
         ))}
@@ -498,138 +525,129 @@ GOAL_TEMPLATE:
   const remaining = isPro?null:Math.max(0,FREE_LIMIT-usageCount);
 
   return (
-    <div style={{fontFamily:"'Georgia', serif",background:"#F8FAFC",minHeight:"100vh"}}>
+    <div style={{fontFamily:FONT.sans,background:COLORS.canvas,color:COLORS.text,minHeight:"100vh"}}>
       {showUpgrade && <UpgradeModal onClose={()=>setShowUpgrade(false)} triggered={upgradeTrigger} />}
       {showHistory && <HistoryPanel items={history} onClose={()=>setShowHistory(false)} />}
       {showAuth && <AuthModal onClose={()=>setShowAuth(false)} />}
-      {showSuccessBanner && <div style={{background:COLORS.green,padding:"12px 24px",textAlign:"center"}}><p style={{fontSize:14,fontWeight:600,color:"#fff",margin:0,fontFamily:"sans-serif"}}>Payment successful — welcome to GoalIgnite Pro.</p></div>}
+      {showSuccessBanner && <div style={{background:COLORS.tealLight,padding:"12px 24px",textAlign:"center"}}><p style={{fontSize:14,fontWeight:600,color:COLORS.navy,margin:0,fontFamily:FONT.sans}}>Payment successful. You now have unlimited access to Goal Ignite Pro.</p></div>}
 
       {/* Header */}
-      <div style={{background:"#ffffff",borderBottom:"1px solid #e8e8f0",padding:"0 24px",position:"sticky",top:0,zIndex:100}}>
-        <div style={{maxWidth:820,margin:"0 auto",display:"flex",justifyContent:"space-between",alignItems:"center",height:68}}>
-          <div style={{display:"flex",alignItems:"center",gap:12}}>
-            <div style={{width:36,height:36,background:"#4CAF50",borderRadius:9,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-              <svg viewBox="0 0 24 24" fill="none" style={{width:18,height:18}}>
-                <circle cx="12" cy="12" r="3" fill="white" opacity="0.9"/>
-                <path d="M12 3 L12 7 M12 17 L12 21 M3 12 L7 12 M17 12 L21 12" stroke="white" strokeWidth="2" strokeLinecap="round" opacity="0.7"/>
-                <path d="M6.3 6.3 L9.2 9.2 M14.8 14.8 L17.7 17.7 M6.3 17.7 L9.2 14.8 M14.8 9.2 L17.7 6.3" stroke="white" strokeWidth="1.5" strokeLinecap="round" opacity="0.5"/>
-              </svg>
-            </div>
-            <div style={{display:"flex",flexDirection:"column",gap:1}}>
-              <span style={{fontFamily:"'Fraunces', Georgia, serif",fontSize:"1.25rem",fontWeight:600,color:"#1a1a2e",letterSpacing:"-0.02em",lineHeight:1.1}}>Goal <span style={{color:"#4CAF50"}}>Ignite</span></span>
-              <span style={{fontFamily:"system-ui, sans-serif",fontSize:"0.65rem",fontWeight:400,color:"#9b9bb0",letterSpacing:"0.08em",textTransform:"uppercase"}}>Part of the Management Ignition Suite</span>
-            </div>
-            <Badge color={isPro?"green":"amber"}>{isPro?"Pro":"Beta"}</Badge>
+      <div style={{height:3,background:COLORS.tool}} />
+      <div style={{background:COLORS.canvas,borderBottom:`1px solid ${COLORS.border}`,padding:"0 24px"}}>
+        <div style={{maxWidth:800,margin:"0 auto",display:"flex",justifyContent:"space-between",alignItems:"center",minHeight:68,gap:12,flexWrap:"wrap",padding:"10px 0"}}>
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <img src="/mi-mark.svg" alt="" width="26" height="26" style={{display:"block"}} />
+            <span style={{fontSize:18,fontWeight:600,color:COLORS.navy,letterSpacing:"-0.02em"}}>Goal Ignite</span>
+            <Badge color={isPro?"green":"blue"}>{isPro?"Pro":"Beta"}</Badge>
           </div>
-          <div style={{display:"flex",gap:12,alignItems:"center"}}>
-            <button onClick={()=>setShowHistory(true)} style={{background:"none",border:"none",color:"#6b6b85",fontSize:13,cursor:"pointer",padding:0,fontFamily:"system-ui, sans-serif"}}>History</button>
-            {user?(<><span style={{fontSize:12,color:"#9b9bb0",fontFamily:"system-ui, sans-serif"}}>{user.email}</span><button onClick={signOut} style={{background:"none",border:"1px solid #d0d0e0",borderRadius:20,padding:"4px 12px",fontSize:12,color:"#6b6b85",fontFamily:"system-ui, sans-serif",cursor:"pointer"}}>Sign out</button></>):(<button onClick={()=>setShowAuth(true)} style={{background:"none",border:"1px solid #d0d0e0",borderRadius:20,padding:"4px 12px",fontSize:12,color:"#6b6b85",fontFamily:"system-ui, sans-serif",cursor:"pointer"}}>Sign in</button>)}
-            {!isPro&&(<><div style={{background:"#f0f8ff",borderRadius:20,padding:"4px 12px",fontSize:12,color:"#3d3d56",fontFamily:"system-ui, sans-serif"}}>{remaining} free {remaining===1?"use":"uses"} left</div><button onClick={()=>{setUpgradeTrigger("manual");setShowUpgrade(true);}} style={{background:"#4CAF50",border:"none",borderRadius:20,padding:"5px 14px",fontSize:12,color:"#fff",fontFamily:"system-ui, sans-serif",fontWeight:600,cursor:"pointer"}}>Upgrade</button></>)}
+          <div style={{display:"flex",gap:10,alignItems:"center",flexWrap:"wrap"}}>
+            <button onClick={()=>setShowHistory(true)} style={{background:"none",border:"none",color:COLORS.navyMid,fontSize:14,fontWeight:500,cursor:"pointer",padding:"8px 6px",fontFamily:FONT.sans}}>History</button>
+            {user?(<><span style={{fontSize:13,color:COLORS.muted,fontFamily:FONT.sans}}>{user.email}</span><button onClick={signOut} style={{background:COLORS.white,border:`1px solid ${COLORS.border}`,borderRadius:10,minHeight:36,padding:"0 14px",fontSize:14,color:COLORS.navy,fontFamily:FONT.sans,cursor:"pointer"}}>Sign out</button></>):(<button onClick={()=>setShowAuth(true)} style={{background:COLORS.white,border:`1px solid ${COLORS.border}`,borderRadius:10,minHeight:36,padding:"0 14px",fontSize:14,color:COLORS.navy,fontFamily:FONT.sans,cursor:"pointer"}}>Sign in</button>)}
+            {!isPro&&(<><span style={{background:COLORS.sunk,borderRadius:999,padding:"4px 12px",fontSize:13,color:COLORS.navyMid,fontFamily:FONT.sans}}>{remaining} free {remaining===1?"use":"uses"} left</span><button onClick={()=>{setUpgradeTrigger("manual");setShowUpgrade(true);}} style={{background:COLORS.navy,border:"none",borderRadius:10,minHeight:36,padding:"0 16px",fontSize:14,color:"#fff",fontFamily:FONT.sans,fontWeight:600,cursor:"pointer"}}>Upgrade</button></>)}
           </div>
         </div>
       </div>
 
       {/* Hero */}
-      <div style={{background:COLORS.navy,borderBottom:`3px solid ${COLORS.teal}`,paddingBottom:32}}>
-        <div style={{maxWidth:800,margin:"0 auto",padding:"28px 24px 0"}}>
-          <h1 style={{fontSize:30,fontWeight:700,color:"#fff",margin:"0 0 10px",lineHeight:1.25,letterSpacing:"-0.02em"}}>Set better goals.<br/>Every time.</h1>
-          <p style={{fontSize:16,color:"rgba(255,255,255,0.7)",margin:0,lineHeight:1.6,fontFamily:"sans-serif"}}>Match the goal to the person. Get a practical goal-setting guide and a ready-to-use goal brief in seconds.</p>
+      <div style={{background:COLORS.canvas}}>
+        <div style={{maxWidth:800,margin:"0 auto",padding:"48px 24px 8px"}}>
+          <h1 style={{fontSize:"clamp(32px, 6vw, 40px)",fontWeight:600,color:COLORS.navy,margin:"0 0 12px",lineHeight:1.1,letterSpacing:"-0.03em"}}>Set better goals.<br/>Every time.</h1>
+          <p style={{fontSize:18,lineHeight:"28px",color:COLORS.navyMid,margin:0,maxWidth:"40rem",fontFamily:FONT.sans}}>Match the goal to the person. Get a practical goal-setting guide and a ready-to-use goal brief in seconds.</p>
         </div>
       </div>
 
       <div style={{maxWidth:800,margin:"0 auto",padding:"28px 24px 60px"}}>
 
         {/* Form */}
-        <div style={{background:COLORS.white,borderRadius:14,border:`1px solid ${COLORS.border}`,padding:"28px 28px",marginBottom:24}}>
-          <h2 style={{fontSize:16,fontWeight:700,color:COLORS.navy,margin:"0 0 22px",fontFamily:"sans-serif",borderBottom:`1px solid ${COLORS.border}`,paddingBottom:14}}>The goal</h2>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0 20px"}}>
+        <div style={{background:COLORS.white,borderRadius:22,boxShadow:SHADOW,padding:"clamp(24px, 5vw, 48px)",marginBottom:32}}>
+          <h2 style={{fontSize:20,fontWeight:600,letterSpacing:"-0.01em",color:COLORS.navy,margin:"0 0 24px",fontFamily:FONT.sans}}>The goal</h2>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(220px, 1fr))",gap:"0 20px"}}>
             <TextField label="Manager name" value={form.managerName} onChange={f("managerName")} placeholder="Your name" required />
             <TextField label="Person's name" value={form.personName} onChange={f("personName")} placeholder="Their name" required />
           </div>
           <TextField label="Goal title" value={form.goalTitle} onChange={f("goalTitle")} placeholder="e.g. Lead the Q3 client review process independently" required />
           <TextField label="Goal description" value={form.goalDescription} onChange={f("goalDescription")} placeholder="What does this goal involve? What change or achievement are you aiming for?" multiline required />
           <TextField label="What does success look like?" value={form.successCriteria} onChange={f("successCriteria")} placeholder="How will you and they know the goal has been achieved?" multiline />
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0 20px"}}>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(220px, 1fr))",gap:"0 20px"}}>
             <TextField label="Deadline or target date" value={form.deadline} onChange={f("deadline")} placeholder="e.g. End of Q3 / 30 September" />
             <div style={{marginBottom:16}}>
-              <label style={{display:"block",fontSize:13,fontWeight:600,color:COLORS.navy,marginBottom:8}}>Goal timeframe</label>
+              <label style={{display:"block",fontSize:13,fontWeight:600,letterSpacing:"0.01em",color:COLORS.muted,marginBottom:8}}>Goal timeframe</label>
               <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
                 {["Short-term (< 1 month)","Medium-term (1–6 months)","Long-term (6+ months)"].map(o=>(
-                  <button key={o} onClick={()=>f("goalTimeframe")(o)} style={{padding:"7px 10px",border:`1.5px solid ${form.goalTimeframe===o?COLORS.blue:COLORS.border}`,borderRadius:8,background:form.goalTimeframe===o?COLORS.blueLight:COLORS.white,color:form.goalTimeframe===o?COLORS.blue:COLORS.slate,fontSize:11.5,fontWeight:form.goalTimeframe===o?600:400,cursor:"pointer"}}>{o}</button>
+                  <button key={o} onClick={()=>f("goalTimeframe")(o)} aria-pressed={form.goalTimeframe===o} style={{minHeight:40,padding:"0 18px",border:`1px solid ${form.goalTimeframe===o?COLORS.navy:COLORS.border}`,boxShadow:form.goalTimeframe===o?`inset 0 0 0 1px ${COLORS.navy}`:"none",borderRadius:10,background:form.goalTimeframe===o?COLORS.sunk:COLORS.white,color:COLORS.navy,fontSize:14,fontWeight:form.goalTimeframe===o?600:400,cursor:"pointer",fontFamily:FONT.sans,transition:"all 0.15s"}}>{o}</button>
                 ))}
               </div>
             </div>
           </div>
 
           <div style={{borderTop:`1px solid ${COLORS.border}`,paddingTop:20,marginTop:4}}>
-            <h3 style={{fontSize:14,fontWeight:700,color:COLORS.navy,margin:"0 0 16px",fontFamily:"sans-serif"}}>Goal profile</h3>
+            <h3 style={{fontSize:17,fontWeight:600,color:COLORS.navy,margin:"0 0 16px",fontFamily:FONT.sans}}>Goal profile</h3>
             <ToggleGroup label="Stretch level" value={form.stretchLevel} onChange={f("stretchLevel")} options={[{value:"Low",label:"Low"},{value:"Medium",label:"Medium"},{value:"High",label:"High"}]} />
             <div style={{marginBottom:16}}>
-              <label style={{display:"block",fontSize:13,fontWeight:600,color:COLORS.navy,marginBottom:6}}>Goal type <span style={{fontSize:12,fontWeight:400,color:COLORS.muted}}>(optional — we'll recommend one if not set)</span></label>
+              <label style={{display:"block",fontSize:13,fontWeight:600,letterSpacing:"0.01em",color:COLORS.muted,marginBottom:8}}>Goal type <span style={{fontWeight:400}}>(optional: we'll recommend one if you leave it)</span></label>
               <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
                 {[{value:"",label:"Recommend for me"},{value:"SMART",label:"SMART"},{value:"Descriptive",label:"Descriptive"},{value:"NLP",label:"NLP Outcome"}].map(o=>(
-                  <button key={o.value} onClick={()=>f("goalType")(o.value)} style={{padding:"7px 14px",border:`1.5px solid ${form.goalType===o.value?COLORS.blue:COLORS.border}`,borderRadius:8,background:form.goalType===o.value?COLORS.blueLight:COLORS.white,color:form.goalType===o.value?COLORS.blue:COLORS.slate,fontSize:13,fontWeight:form.goalType===o.value?600:400,cursor:"pointer"}}>{o.label}</button>
+                  <button key={o.value} onClick={()=>f("goalType")(o.value)} aria-pressed={form.goalType===o.value} style={{minHeight:40,padding:"0 18px",border:`1px solid ${form.goalType===o.value?COLORS.navy:COLORS.border}`,boxShadow:form.goalType===o.value?`inset 0 0 0 1px ${COLORS.navy}`:"none",borderRadius:10,background:form.goalType===o.value?COLORS.sunk:COLORS.white,color:COLORS.navy,fontSize:14,fontWeight:form.goalType===o.value?600:400,cursor:"pointer",fontFamily:FONT.sans,transition:"all 0.15s"}}>{o.label}</button>
                 ))}
               </div>
             </div>
           </div>
 
           <div style={{borderTop:`1px solid ${COLORS.border}`,paddingTop:20,marginTop:4}}>
-            <h3 style={{fontSize:14,fontWeight:700,color:COLORS.navy,margin:"0 0 16px",fontFamily:"sans-serif"}}>About {form.personName||"the person"}</h3>
+            <h3 style={{fontSize:17,fontWeight:600,color:COLORS.navy,margin:"0 0 16px",fontFamily:FONT.sans}}>About {form.personName||"the person"}</h3>
             <ToggleGroup label="Skill level for this type of goal" value={form.skillLevel} onChange={f("skillLevel")} options={[{value:"Low",label:"Low"},{value:"Medium",label:"Medium"},{value:"High",label:"High"}]} />
             <ToggleGroup label="Confidence level" value={form.confidenceLevel} onChange={f("confidenceLevel")} options={[{value:"Low",label:"Low"},{value:"Medium",label:"Medium"},{value:"High",label:"High"}]} />
           </div>
 
           {challengeZone && (
             <div style={{borderTop:`1px solid ${COLORS.border}`,paddingTop:20,marginTop:4}}>
-              <h3 style={{fontSize:14,fontWeight:700,color:COLORS.navy,margin:"0 0 12px",fontFamily:"sans-serif"}}>Challenge assessment</h3>
-              <div style={{background:challengeZone.colorLight,border:`1px solid ${challengeZone.color}`,borderRadius:10,padding:"14px 18px"}}>
-                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}><span style={{fontSize:16}}>{challengeZone.icon}</span><p style={{fontSize:14,fontWeight:700,color:challengeZone.color,margin:0,fontFamily:"sans-serif"}}>{challengeZone.zone}</p></div>
-                <p style={{fontSize:13,color:COLORS.text,margin:"0 0 4px",fontFamily:"sans-serif",lineHeight:1.5}}>{challengeZone.summary}</p>
-                <p style={{fontSize:12.5,color:COLORS.muted,margin:0,fontStyle:"italic",fontFamily:"sans-serif"}}>{challengeZone.supportLevel}</p>
+              <h3 style={{fontSize:17,fontWeight:600,color:COLORS.navy,margin:"0 0 12px",fontFamily:FONT.sans}}>Challenge assessment</h3>
+              <div style={{background:challengeZone.colorLight,borderRadius:10,padding:"16px 20px"}}>
+                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}><span aria-hidden="true" style={{width:10,height:10,borderRadius:999,background:challengeZone.color,flexShrink:0}} /><p style={{fontSize:15,fontWeight:600,color:COLORS.navy,margin:0,fontFamily:FONT.sans}}>{challengeZone.zone}</p></div>
+                <p style={{fontSize:13,color:COLORS.text,margin:"0 0 6px",fontFamily:FONT.sans,lineHeight:1.5}}>{challengeZone.summary}</p>
+                <p style={{fontSize:13,color:COLORS.navyMid,margin:0,fontFamily:FONT.sans,lineHeight:1.5}}>{challengeZone.supportLevel}</p>
               </div>
             </div>
           )}
 
           {cadence && (
             <div style={{borderTop:`1px solid ${COLORS.border}`,paddingTop:20,marginTop:4}}>
-              <h3 style={{fontSize:14,fontWeight:700,color:COLORS.navy,margin:"0 0 12px",fontFamily:"sans-serif"}}>Suggested review cadence</h3>
-              <div style={{background:COLORS.tealLight,border:`1px solid ${COLORS.teal}`,borderRadius:10,padding:"14px 18px"}}>
-                <p style={{fontSize:14,fontWeight:700,color:COLORS.teal,margin:"0 0 4px",fontFamily:"sans-serif"}}>{cadence.frequency}</p>
-                <p style={{fontSize:13,color:COLORS.text,margin:"0 0 6px",fontFamily:"sans-serif"}}>{cadence.format}</p>
-                <p style={{fontSize:12.5,color:COLORS.muted,margin:0,fontStyle:"italic",fontFamily:"sans-serif",lineHeight:1.5}}>{cadence.rationale}</p>
+              <h3 style={{fontSize:17,fontWeight:600,color:COLORS.navy,margin:"0 0 12px",fontFamily:FONT.sans}}>Suggested review cadence</h3>
+              <div style={{background:COLORS.tealLight,borderRadius:10,padding:"16px 20px"}}>
+                <p style={{fontSize:15,fontWeight:600,color:COLORS.navy,margin:"0 0 4px",fontFamily:FONT.sans}}>{cadence.frequency}</p>
+                <p style={{fontSize:13,color:COLORS.text,margin:"0 0 6px",fontFamily:FONT.sans}}>{cadence.format}</p>
+                <p style={{fontSize:13,color:COLORS.navyMid,margin:0,fontFamily:FONT.sans,lineHeight:1.5}}>{cadence.rationale}</p>
               </div>
             </div>
           )}
 
           <div style={{borderTop:`1px solid ${COLORS.border}`,paddingTop:16,marginTop:16,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:12}}>
-            <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",fontSize:13,color:COLORS.muted,fontFamily:"sans-serif"}}>
-              <input type="checkbox" checked={form.saveLocally} onChange={e=>setForm(p=>({...p,saveLocally:e.target.checked}))} style={{width:15,height:15}} />
+            <label style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer",fontSize:14,color:COLORS.navyMid,fontFamily:FONT.sans}}>
+              <input type="checkbox" checked={form.saveLocally} onChange={e=>setForm(p=>({...p,saveLocally:e.target.checked}))} style={{width:18,height:18,accentColor:COLORS.navy}} />
               Save this goal to history
             </label>
-            {error && <p style={{fontSize:13,color:COLORS.red,margin:0,fontFamily:"sans-serif"}}>{error}</p>}
+            {error && <p style={{fontSize:13,color:COLORS.red,margin:0,fontFamily:FONT.sans}}>{error}</p>}
           </div>
 
-          <button onClick={generate} disabled={loading} style={{width:"100%",marginTop:16,padding:"14px",background:loading?COLORS.slate:COLORS.navy,color:"#fff",border:"none",borderRadius:10,fontSize:15,fontWeight:600,cursor:loading?"not-allowed":"pointer",fontFamily:"sans-serif",letterSpacing:"0.01em",transition:"background 0.2s"}}>
+          <button onClick={generate} disabled={loading} style={{width:"100%",marginTop:20,minHeight:52,padding:"0 24px",background:COLORS.navy,opacity:loading?0.7:1,color:"#fff",border:"none",borderRadius:10,fontSize:16,fontWeight:600,cursor:loading?"not-allowed":"pointer",fontFamily:FONT.sans,transition:"opacity 0.2s"}}>
             {loading?"Generating your goal-setting guide...":"Generate goal-setting guide"}
           </button>
-          {!isPro&&remaining<=1&&!loading&&(<p style={{textAlign:"center",fontSize:12,color:COLORS.amber,marginTop:10,fontFamily:"sans-serif"}}>{remaining===0?"You've used all free goals.":"Last free goal."}{" "}<span style={{textDecoration:"underline",cursor:"pointer"}} onClick={()=>{setUpgradeTrigger("limit");setShowUpgrade(true);}}>Upgrade for unlimited access.</span></p>)}
+          {!isPro&&remaining<=1&&!loading&&(<p style={{textAlign:"center",fontSize:12,color:COLORS.amber,marginTop:10,fontFamily:FONT.sans}}>{remaining===0?"You've used all free goals.":"Last free goal."}{" "}<span style={{textDecoration:"underline",cursor:"pointer"}} onClick={()=>{setUpgradeTrigger("limit");setShowUpgrade(true);}}>Upgrade for unlimited access.</span></p>)}
         </div>
 
         {/* Goal sharpening */}
         {goalCheck && !goalAccepted && (
-          <div style={{background:COLORS.amberLight,border:`1px solid ${COLORS.amber}`,borderRadius:14,padding:"24px 28px",marginBottom:24}}>
+          <div style={{background:COLORS.amberLight,borderRadius:10,padding:"24px 28px",marginBottom:24}}>
             <div style={{display:"flex",alignItems:"flex-start",gap:14,marginBottom:16}}>
-              <div style={{fontSize:20,lineHeight:1,flexShrink:0}}>⚠️</div>
-              <div><p style={{fontSize:14,fontWeight:700,color:COLORS.navy,margin:"0 0 4px",fontFamily:"sans-serif"}}>Your goal needs sharpening</p><p style={{fontSize:13,color:COLORS.text,margin:0,fontFamily:"sans-serif",lineHeight:1.6}}>{goalCheck.reason}</p></div>
+              <div><p style={{fontSize:14,fontWeight:700,color:COLORS.navy,margin:"0 0 4px",fontFamily:FONT.sans}}>Your goal needs sharpening</p><p style={{fontSize:13,color:COLORS.text,margin:0,fontFamily:FONT.sans,lineHeight:1.6}}>{goalCheck.reason}</p></div>
             </div>
             <div style={{marginBottom:16}}>
-              <label style={{display:"block",fontSize:13,fontWeight:600,color:COLORS.navy,marginBottom:6,fontFamily:"sans-serif"}}>Suggested rewrite — edit if needed:</label>
-              <textarea value={sharpenedGoal} onChange={e=>setSharpenedGoal(e.target.value)} rows={4} style={{width:"100%",padding:"10px 14px",border:`1.5px solid ${COLORS.amber}`,borderRadius:8,fontSize:13.5,lineHeight:1.6,color:COLORS.text,fontFamily:"Georgia, serif",boxSizing:"border-box",background:COLORS.white,outline:"none",resize:"vertical"}} />
+              <label style={{display:"block",fontSize:13,fontWeight:600,color:COLORS.navy,marginBottom:8,fontFamily:FONT.sans}}>Suggested rewrite. Edit it if you need to.</label>
+              <textarea value={sharpenedGoal} onChange={e=>setSharpenedGoal(e.target.value)} rows={4} style={{width:"100%",padding:"12px 16px",border:`1px solid ${COLORS.border}`,borderRadius:10,fontSize:15,lineHeight:1.6,color:COLORS.text,fontFamily:FONT.sans,boxSizing:"border-box",background:COLORS.white,resize:"vertical"}} />
             </div>
             <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
-              <button onClick={()=>{setGoalAccepted(true);runGenerate(sharpenedGoal);}} style={{padding:"10px 20px",background:COLORS.navy,color:"#fff",border:"none",borderRadius:8,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"sans-serif"}}>Use this — generate guide</button>
-              <button onClick={()=>{setGoalCheck(null);setGoalAccepted(true);setSharpenedGoal(form.goalDescription);runGenerate(form.goalDescription);}} style={{padding:"10px 20px",background:COLORS.white,color:COLORS.navy,border:`1px solid ${COLORS.border}`,borderRadius:8,fontSize:13,fontWeight:500,cursor:"pointer",fontFamily:"sans-serif"}}>Keep my original wording</button>
+              <button onClick={()=>{setGoalAccepted(true);runGenerate(sharpenedGoal);}} style={{minHeight:44,padding:"0 24px",background:COLORS.navy,color:"#fff",border:"none",borderRadius:10,fontSize:15,fontWeight:600,cursor:"pointer",fontFamily:FONT.sans}}>Use this and generate the guide</button>
+              <button onClick={()=>{setGoalCheck(null);setGoalAccepted(true);setSharpenedGoal(form.goalDescription);runGenerate(form.goalDescription);}} style={{minHeight:44,padding:"0 24px",background:COLORS.white,color:COLORS.navy,border:`1px solid ${COLORS.border}`,borderRadius:10,fontSize:15,fontWeight:500,cursor:"pointer",fontFamily:FONT.sans}}>Keep my original wording</button>
             </div>
           </div>
         )}
@@ -637,61 +655,60 @@ GOAL_TEMPLATE:
         {/* Results */}
         {result && (
           <div ref={resultsRef}>
-            <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20}}>
-              <h2 style={{fontSize:18,fontWeight:700,color:COLORS.navy,margin:0,fontFamily:"sans-serif"}}>Your goal-setting guide</h2>
+            <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20,flexWrap:"wrap"}}>
+              <h2 style={{fontSize:28,fontWeight:600,letterSpacing:"-0.02em",color:COLORS.navy,margin:0,fontFamily:FONT.sans}}>Your goal-setting guide</h2>
               <Badge color="green">Ready to use</Badge>
             </div>
 
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:20}}>
-              <div style={{background:COLORS.blueLight,border:`1px solid ${COLORS.blue}`,borderRadius:10,padding:"14px 18px"}}>
-                <p style={{fontSize:11,fontWeight:600,color:COLORS.blue,textTransform:"uppercase",letterSpacing:"0.06em",margin:"0 0 4px",fontFamily:"sans-serif"}}>Goal type</p>
-                <p style={{fontSize:16,fontWeight:700,color:COLORS.navy,margin:"0 0 2px"}}>{GOAL_TYPE_INFO[result.goalType]?.icon} {GOAL_TYPE_INFO[result.goalType]?.label||result.goalType}</p>
-                <p style={{fontSize:12,color:COLORS.muted,margin:0,fontFamily:"sans-serif",lineHeight:1.4}}>{GOAL_TYPE_INFO[result.goalType]?.desc}</p>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(220px, 1fr))",gap:12,marginBottom:20}}>
+              <div style={{background:COLORS.white,border:`1px solid ${COLORS.border}`,borderRadius:10,padding:"20px 24px"}}>
+                <p style={{fontSize:13,fontWeight:600,color:COLORS.muted,letterSpacing:"0.01em",margin:"0 0 4px",fontFamily:FONT.sans}}>Goal type</p>
+                <p style={{fontSize:18,fontWeight:600,color:COLORS.navy,margin:"0 0 4px"}}>{GOAL_TYPE_INFO[result.goalType]?.label||result.goalType}</p>
+                <p style={{fontSize:14,color:COLORS.navyMid,margin:0,fontFamily:FONT.sans,lineHeight:"20px"}}>{GOAL_TYPE_INFO[result.goalType]?.desc}</p>
               </div>
-              <div style={{background:"#F5F3FF",border:"1px solid #7C3AED",borderRadius:10,padding:"14px 18px"}}>
-                <p style={{fontSize:11,fontWeight:600,color:"#7C3AED",textTransform:"uppercase",letterSpacing:"0.06em",margin:"0 0 4px",fontFamily:"sans-serif"}}>Coaching mode</p>
-                <p style={{fontSize:16,fontWeight:700,color:COLORS.navy,margin:"0 0 2px"}}>{result.coachingMode}</p>
-                <p style={{fontSize:12,color:COLORS.muted,margin:0,fontFamily:"sans-serif",lineHeight:1.4}}>{{Direct:"Clear guidance and close involvement.",Coaching:"Questions that build their thinking.",Supporting:"Encouragement and evidence of capability.",Delegating:"Clear goal, agreed freedom, then trust."}[result.coachingMode]||""}</p>
+              <div style={{background:COLORS.white,border:`1px solid ${COLORS.border}`,borderRadius:10,padding:"20px 24px"}}>
+                <p style={{fontSize:13,fontWeight:600,color:COLORS.muted,letterSpacing:"0.01em",margin:"0 0 4px",fontFamily:FONT.sans}}>Coaching mode</p>
+                <p style={{fontSize:18,fontWeight:600,color:COLORS.navy,margin:"0 0 4px"}}>{result.coachingMode}</p>
+                <p style={{fontSize:14,color:COLORS.navyMid,margin:0,fontFamily:FONT.sans,lineHeight:"20px"}}>{{Direct:"Clear guidance and close involvement.",Coaching:"Questions that build their thinking.",Supporting:"Encouragement and evidence of capability.",Delegating:"Clear goal, agreed freedom, then trust."}[result.coachingMode]||""}</p>
               </div>
             </div>
 
-            <div style={{background:result.challengeZone.colorLight,border:`1px solid ${result.challengeZone.color}`,borderRadius:12,padding:"18px 22px",marginBottom:20}}>
-              <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
-                <span style={{fontSize:20}}>{result.challengeZone.icon}</span>
-                <div><p style={{fontSize:11,fontWeight:600,color:result.challengeZone.color,textTransform:"uppercase",letterSpacing:"0.06em",margin:0}}>Challenge assessment</p><p style={{fontSize:16,fontWeight:700,color:COLORS.navy,margin:0}}>{result.challengeZone.zone}</p></div>
+            <div style={{background:result.challengeZone.colorLight,borderRadius:10,padding:"20px 24px",marginBottom:20}}>
+              <div style={{marginBottom:10}}>
+                <p style={{fontSize:13,fontWeight:600,color:COLORS.navy,letterSpacing:"0.01em",margin:"0 0 2px"}}>Challenge assessment</p>
+                <div style={{display:"flex",alignItems:"center",gap:8}}><span aria-hidden="true" style={{width:10,height:10,borderRadius:999,background:result.challengeZone.color,flexShrink:0}} /><p style={{fontSize:16,fontWeight:700,color:COLORS.navy,margin:0}}>{result.challengeZone.zone}</p></div>
               </div>
-              <p style={{fontSize:13,color:COLORS.text,lineHeight:1.6,margin:"0 0 6px",fontFamily:"sans-serif"}}>{result.challengeZone.summary}</p>
-              <p style={{fontSize:12.5,color:COLORS.muted,fontStyle:"italic",lineHeight:1.5,margin:0,fontFamily:"sans-serif"}}>{result.challengeZone.supportLevel}</p>
+              <p style={{fontSize:13,color:COLORS.text,lineHeight:1.6,margin:"0 0 6px",fontFamily:FONT.sans}}>{result.challengeZone.summary}</p>
+              <p style={{fontSize:13,color:COLORS.navyMid,lineHeight:1.5,margin:0,fontFamily:FONT.sans}}>{result.challengeZone.supportLevel}</p>
             </div>
 
-            <div style={{background:COLORS.tealLight,border:`1px solid ${COLORS.teal}`,borderRadius:12,padding:"18px 22px",marginBottom:20}}>
+            <div style={{background:COLORS.tealLight,borderRadius:10,padding:"20px 24px",marginBottom:20}}>
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12,flexWrap:"wrap",gap:10}}>
                 <div style={{display:"flex",alignItems:"center",gap:10}}>
-                  <div style={{width:32,height:32,background:COLORS.teal,borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",fontSize:15}}>🔁</div>
-                  <div><p style={{fontSize:11,fontWeight:600,color:COLORS.teal,textTransform:"uppercase",letterSpacing:"0.06em",margin:0}}>Recommended review cadence</p><p style={{fontSize:16,fontWeight:700,color:COLORS.navy,margin:0}}>{result.cadence.frequency}</p></div>
+                  <div><p style={{fontSize:13,fontWeight:600,color:COLORS.navy,letterSpacing:"0.01em",margin:"0 0 2px"}}>Recommended review cadence</p><p style={{fontSize:16,fontWeight:700,color:COLORS.navy,margin:0}}>{result.cadence.frequency}</p></div>
                 </div>
                 {!result.cadence.frequency.toLowerCase().includes("milestone")&&(
-                  <button onClick={()=>generateICS({goalTitle:result.goalTitle,personName:result.personName,managerName:result.managerName,cadence:result.cadence})} style={{display:"flex",alignItems:"center",gap:6,padding:"7px 14px",background:COLORS.teal,color:"#fff",border:"none",borderRadius:8,fontSize:12.5,fontWeight:600,cursor:"pointer",fontFamily:"sans-serif",whiteSpace:"nowrap"}}><span style={{fontSize:14}}>📅</span> Add to calendar</button>
+                  <button onClick={()=>generateICS({goalTitle:result.goalTitle,personName:result.personName,managerName:result.managerName,cadence:result.cadence})} style={{display:"flex",alignItems:"center",minHeight:40,padding:"0 18px",background:COLORS.navy,color:"#fff",border:"none",borderRadius:10,fontSize:14,fontWeight:600,cursor:"pointer",fontFamily:FONT.sans,whiteSpace:"nowrap"}}>Add to calendar</button>
                 )}
               </div>
-              <p style={{fontSize:13,color:COLORS.text,lineHeight:1.6,margin:"0 0 8px",fontFamily:"sans-serif"}}><strong>Format:</strong> {result.cadence.format}</p>
-              <p style={{fontSize:13,color:COLORS.muted,lineHeight:1.6,margin:0,fontStyle:"italic",fontFamily:"sans-serif"}}>{result.cadence.rationale}</p>
+              <p style={{fontSize:13,color:COLORS.text,lineHeight:1.6,margin:"0 0 8px",fontFamily:FONT.sans}}><strong>Format:</strong> {result.cadence.format}</p>
+              <p style={{fontSize:13,color:COLORS.navyMid,lineHeight:1.6,margin:0,fontFamily:FONT.sans}}>{result.cadence.rationale}</p>
             </div>
 
             <OutputBox title="Advice for the manager" content={result.advice} badge={{color:"blue",label:"Manager only"}} />
-            <OutputBox title={`Goal brief for ${result.personName}`} content={result.brief} badge={{color:"teal",label:"Share with your person"}} />
-            {result.goalTemplate && <OutputBox title="Goal template" content={result.goalTemplate} badge={{color:"purple",label:"Use in your conversation"}} />}
+            <OutputBox title={`Goal brief for ${displayName(result.personName)}`} content={result.brief} badge={{color:"teal",label:"Share with your person"}} spoken />
+            {result.goalTemplate && <OutputBox title="Goal template" content={result.goalTemplate} badge={{color:"purple",label:"Use in your conversation"}} spoken />}
 
-            <div style={{background:COLORS.slateLight,borderRadius:10,padding:"14px 18px",border:`1px solid ${COLORS.border}`,display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:10}}>
-              <p style={{fontSize:13,color:COLORS.muted,margin:0,fontFamily:"sans-serif"}}>Both outputs are editable. Adjust to fit your voice before sharing.</p>
+            <div style={{background:COLORS.white,borderRadius:10,padding:"16px 20px",border:`1px solid ${COLORS.border}`,display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:12}}>
+              <p style={{fontSize:14,color:COLORS.navyMid,margin:0,fontFamily:FONT.sans}}>Every output is editable. Adjust it to fit your voice before sharing.</p>
               <div style={{display:"flex",gap:10,alignItems:"center",flexWrap:"wrap"}}>
                 {person && (
-                  <button onClick={saveToPerson} disabled={saveState !== "idle"} style={{ fontSize: 13, padding: "7px 16px", background: saveState === "saved" ? "#F0FDF4" : "#0F2A4A", border: saveState === "saved" ? "1px solid #16A34A" : "none", borderRadius: 8, color: saveState === "saved" ? "#16A34A" : "#fff", cursor: saveState === "idle" ? "pointer" : "default", fontFamily: "sans-serif", fontWeight: 600 }}>
+                  <button onClick={saveToPerson} disabled={saveState !== "idle"} style={{ fontSize: 14, minHeight: 44, padding: "0 20px", background: saveState === "saved" ? COLORS.greenLight : COLORS.navy, border: saveState === "saved" ? `1px solid ${COLORS.green}` : "none", borderRadius: 10, color: saveState === "saved" ? COLORS.green : COLORS.white, cursor: saveState === "idle" ? "pointer" : "default", fontFamily: FONT.sans, fontWeight: 600 }}>
                     {saveState === "saved" ? `Saved to ${person.first_name}'s record` : saveState === "saving" ? "Saving..." : `Save to ${person.first_name}'s record`}
                   </button>
                 )}
-                <button onClick={downloadPdf} disabled={downloadingPdf} style={{fontSize:13,padding:"7px 16px",background:"#4CAF50",border:"none",borderRadius:8,color:COLORS.white,cursor:downloadingPdf?"default":"pointer",fontFamily:"sans-serif",fontWeight:600,opacity:downloadingPdf?0.7:1}}>{downloadingPdf?"Preparing PDF...":(isPro?"Download PDF":"Download PDF (Pro)")}</button>
-                <button onClick={resetAll} style={{fontSize:13,padding:"7px 16px",background:COLORS.white,border:`1px solid ${COLORS.border}`,borderRadius:8,color:COLORS.navy,cursor:"pointer",fontFamily:"sans-serif",fontWeight:500}}>New goal</button>
+                <button onClick={downloadPdf} disabled={downloadingPdf} style={{fontSize:14,minHeight:44,padding:"0 20px",background:COLORS.white,border:`1px solid ${COLORS.border}`,borderRadius:10,color:COLORS.navy,cursor:downloadingPdf?"default":"pointer",fontFamily:FONT.sans,fontWeight:600,opacity:downloadingPdf?0.7:1}}>{downloadingPdf?"Preparing PDF...":(isPro?"Download PDF":"Download PDF (Pro)")}</button>
+                <button onClick={resetAll} style={{fontSize:14,minHeight:44,padding:"0 20px",background:COLORS.white,border:`1px solid ${COLORS.border}`,borderRadius:10,color:COLORS.navy,cursor:"pointer",fontFamily:FONT.sans,fontWeight:500}}>New goal</button>
               </div>
             </div>
           </div>
@@ -699,13 +716,13 @@ GOAL_TEMPLATE:
 
         {!result && !loading && (
           <div style={{marginTop:8}}>
-            <h3 style={{fontSize:13,fontWeight:600,color:COLORS.muted,textTransform:"uppercase",letterSpacing:"0.06em",margin:"0 0 16px",fontFamily:"sans-serif"}}>How it works</h3>
-            <div style={{display:"grid",gridTemplateColumns:"repeat(3, 1fr)",gap:12}}>
+            <h3 style={{fontSize:13,fontWeight:600,color:COLORS.muted,letterSpacing:"0.01em",margin:"0 0 16px",fontFamily:FONT.sans}}>How it works</h3>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(200px, 1fr))",gap:12}}>
               {[{n:"1",title:"Describe the goal",desc:"Tell us what you are aiming for and for whom."},{n:"2",title:"Profile the person",desc:"Skill, confidence, and stretch level shape the right approach."},{n:"3",title:"Get your guide",desc:"Receive a goal-setting plan and a ready goal brief."}].map(s=>(
-                <div key={s.n} style={{background:COLORS.white,border:`1px solid ${COLORS.border}`,borderRadius:10,padding:"16px 18px"}}>
-                  <div style={{width:28,height:28,background:COLORS.navy,borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:700,color:"#fff",marginBottom:10,fontFamily:"sans-serif"}}>{s.n}</div>
-                  <p style={{fontSize:13,fontWeight:600,color:COLORS.navy,margin:"0 0 4px",fontFamily:"sans-serif"}}>{s.title}</p>
-                  <p style={{fontSize:12.5,color:COLORS.muted,margin:0,lineHeight:1.5,fontFamily:"sans-serif"}}>{s.desc}</p>
+                <div key={s.n} style={{background:COLORS.white,border:`1px solid ${COLORS.border}`,borderRadius:10,padding:"20px 22px"}}>
+                  <div style={{fontSize:20,fontWeight:600,color:COLORS.teal,marginBottom:8,fontFamily:FONT.sans}}>{s.n}</div>
+                  <p style={{fontSize:15,fontWeight:600,color:COLORS.navy,margin:"0 0 4px",fontFamily:FONT.sans}}>{s.title}</p>
+                  <p style={{fontSize:14,color:COLORS.navyMid,margin:0,lineHeight:"20px",fontFamily:FONT.sans}}>{s.desc}</p>
                 </div>
               ))}
             </div>
@@ -713,10 +730,10 @@ GOAL_TEMPLATE:
         )}
 
         <div style={{borderTop:`1px solid ${COLORS.border}`,marginTop:40,paddingTop:20,textAlign:"center"}}>
-          <p style={{fontSize:12,color:COLORS.muted,margin:0,fontFamily:"sans-serif"}}>
-            GoalIgnite by <a href="https://themessagebusiness.com" style={{color:COLORS.teal,textDecoration:"none"}}>The Message Business</a>
-            {!isPro&&<> · {remaining} free {remaining===1?"use":"uses"} remaining · <span style={{textDecoration:"underline",cursor:"pointer",color:COLORS.blue}} onClick={()=>{setUpgradeTrigger("manual");setShowUpgrade(true);}}>Upgrade to Pro</span></>}
-            {isPro&&<> · <span style={{color:COLORS.green,fontWeight:600}}>Pro — unlimited access</span></>}
+          <p style={{fontSize:13,color:COLORS.muted,margin:0,fontFamily:FONT.sans}}>
+            Goal Ignite, part of <a href="https://management-ignition.com" style={{color:COLORS.navyMid,textUnderlineOffset:4}}>Management Ignition</a>
+            {!isPro&&<> · {remaining} free {remaining===1?"use":"uses"} remaining · <span style={{textDecoration:"underline",textUnderlineOffset:4,cursor:"pointer",color:COLORS.navyMid}} onClick={()=>{setUpgradeTrigger("manual");setShowUpgrade(true);}}>Upgrade to Pro</span></>}
+            {isPro&&<> · <span style={{color:COLORS.green,fontWeight:600}}>Pro, unlimited access</span></>}
           </p>
         </div>
       </div>
