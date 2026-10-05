@@ -14,6 +14,10 @@ import {
   hasSuiteAccess,
   saveToolSession,
   parseSharpened,
+  findPersonByName,
+  createPerson,
+  personRecordUrl,
+  splitName,
 } from "./mi-session.js";
 
 const supabase = createSuiteClient({
@@ -265,6 +269,9 @@ export default function GoalIgnite() {
   const [result, setResult] = useState(null);
   const [person, setPerson] = useState(null);
   const [saveState, setSaveState] = useState("idle");
+  // Started in the tool rather than from the app: is this person already on the team?
+  const [teamMatch, setTeamMatch] = useState(null);
+  const [addedPerson, setAddedPerson] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [showUpgrade, setShowUpgrade] = useState(false);
@@ -477,15 +484,41 @@ GOAL_TEMPLATE:
     finally { setLoading(false); }
   };
 
-  const resetAll = () => { setGoalCheck(null);setSharpenedGoal("");setGoalAccepted(false);setResult(null);window.scrollTo({top:0,behavior:"smooth"}); };
+  const resetAll = () => { setSaveState("idle"); setAddedPerson(null); setGoalCheck(null);setSharpenedGoal("");setGoalAccepted(false);setResult(null);window.scrollTo({top:0,behavior:"smooth"}); };
+
+  useEffect(() => {
+    if (!result || !user || person) { setTeamMatch(null); return; }
+    let cancelled = false;
+    findPersonByName(supabase, (result?.personName || form.personName)).then(({ person: match, error: findError }) => {
+      if (findError) console.error("findPersonByName failed:", findError.message);
+      if (!cancelled) setTeamMatch(match || null);
+    });
+    return () => { cancelled = true; };
+  }, [result, user, person]);
 
   const saveToPerson = async () => {
-    if (!result || !person) return;
+    if (!result) return;
     setSaveState("saving");
+
+    // Three cases: sent here from the app with a person; started here with a name that is
+    // already on the team; started here with someone new, who is added first.
+    let target = person || teamMatch;
+    if (!target) {
+      const { person: created, error: addError } = await createPerson(supabase, (result?.personName || form.personName));
+      if (addError || !created) {
+        console.error("createPerson failed:", addError?.message);
+        setSaveState("idle");
+        setError("That person could not be added to your team, so nothing was saved.");
+        return;
+      }
+      target = created;
+      setAddedPerson(created);
+    }
+    setPerson(target);
 
     const { error: saveError } = await saveToolSession(supabase, {
       tool: "goal",
-      personId: person.id,
+      personId: target.id,
       title: result.goalTitle,
       inputs: form,
       outputs: {
@@ -710,9 +743,9 @@ GOAL_TEMPLATE:
             <div style={{background:COLORS.white,borderRadius:10,padding:"16px 20px",border:`1px solid ${COLORS.border}`,display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:12}}>
               <p style={{fontSize:14,color:COLORS.navyMid,margin:0,fontFamily:FONT.sans}}>Every output is editable. Adjust it to fit your voice before sharing.</p>
               <div style={{display:"flex",gap:10,alignItems:"center",flexWrap:"wrap"}}>
-                {person && (
+                {user && splitName((result?.personName || form.personName)) && (
                   <button onClick={saveToPerson} disabled={saveState !== "idle"} style={{ fontSize: 14, minHeight: 44, padding: "0 20px", background: saveState === "saved" ? COLORS.greenLight : COLORS.navy, border: saveState === "saved" ? `1px solid ${COLORS.green}` : "none", borderRadius: 10, color: saveState === "saved" ? COLORS.green : COLORS.white, cursor: saveState === "idle" ? "pointer" : "default", fontFamily: FONT.sans, fontWeight: 600 }}>
-                    {saveState === "saved" ? `Saved to ${person.first_name}'s record` : saveState === "saving" ? "Saving..." : `Save to ${person.first_name}'s record`}
+                    {saveState === "saved" ? `Saved to ${(person || teamMatch).first_name}'s record` : saveState === "saving" ? "Saving..." : (person || teamMatch) ? `Save to ${(person || teamMatch).first_name}'s record` : `Add ${splitName((result?.personName || form.personName)).first_name} to your team and save`}
                   </button>
                 )}
                 <button onClick={downloadPdf} disabled={downloadingPdf} style={{fontSize:14,minHeight:44,padding:"0 20px",background:COLORS.white,border:`1px solid ${COLORS.border}`,borderRadius:10,color:COLORS.navy,cursor:downloadingPdf?"default":"pointer",fontFamily:FONT.sans,fontWeight:600,opacity:downloadingPdf?0.7:1}}>{downloadingPdf?"Preparing PDF...":(isPro?"Download PDF":"Download PDF (Pro)")}</button>
@@ -720,6 +753,11 @@ GOAL_TEMPLATE:
                 <button onClick={resetAll} style={{fontSize:14,minHeight:44,padding:"0 20px",background:COLORS.white,border:`1px solid ${COLORS.border}`,borderRadius:10,color:COLORS.navy,cursor:"pointer",fontFamily:FONT.sans,fontWeight:500}}>New goal</button>
               </div>
             </div>
+            {addedPerson && saveState === "saved" && (
+              <p style={{ fontSize: 14, lineHeight: "22px", color: COLORS.navyMid, margin: 0, fontFamily: FONT.sans }}>
+                {addedPerson.first_name} is now on your team. <a href={personRecordUrl(addedPerson.id)} style={{ color: COLORS.navy, textUnderlineOffset: 4 }}>Open {addedPerson.first_name}&rsquo;s record</a> to add their role and what they respond to. Every tool reads it.
+              </p>
+            )}
           </div>
         )}
 
