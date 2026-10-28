@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import MethodLink from "./MethodLink.jsx";
 
 // The way back to the app, from the header and from the end of every result.
 const DASHBOARD_URL = "https://app.management-ignition.com/";
@@ -634,6 +635,7 @@ GOAL_TEMPLATE:
           </div>
           <div style={{display:"flex",gap:10,alignItems:"center",flexWrap:"wrap"}}>
             <a href={DASHBOARD_URL} style={{background:"none",border:"none",color:COLORS.navyMid,fontSize:14,fontWeight:500,cursor:"pointer",padding:"8px 6px",fontFamily:FONT.sans,textDecoration:"none"}}>Back to dashboard</a>
+            <MethodLink slug="goal-setting" style={{background:"none",border:"none",color:COLORS.navyMid,fontSize:14,fontWeight:500,cursor:"pointer",padding:"8px 6px",fontFamily:FONT.sans}} />
             <button onClick={()=>setShowHistory(true)} style={{background:"none",border:"none",color:COLORS.navyMid,fontSize:14,fontWeight:500,cursor:"pointer",padding:"8px 6px",fontFamily:FONT.sans}}>History</button>
             {user?(<><span style={{fontSize:13,color:COLORS.muted,fontFamily:FONT.sans}}>{user.email}</span><button onClick={signOut} style={{background:COLORS.white,border:`1px solid ${COLORS.border}`,borderRadius:10,minHeight:36,padding:"0 14px",fontSize:14,color:COLORS.navy,fontFamily:FONT.sans,cursor:"pointer"}}>Sign out</button></>):(<button onClick={()=>setShowAuth(true)} style={{background:COLORS.white,border:`1px solid ${COLORS.border}`,borderRadius:10,minHeight:36,padding:"0 14px",fontSize:14,color:COLORS.navy,fontFamily:FONT.sans,cursor:"pointer"}}>Sign in</button>)}
             {!isPro&&(<><span style={{background:COLORS.sunk,borderRadius:999,padding:"4px 12px",fontSize:13,color:COLORS.navyMid,fontFamily:FONT.sans}}>{remaining} free {remaining===1?"use":"uses"} left</span><button onClick={()=>{setUpgradeTrigger("manual");setShowUpgrade(true);}} style={{background:COLORS.navy,border:"none",borderRadius:10,minHeight:36,padding:"0 16px",fontSize:14,color:"#fff",fontFamily:FONT.sans,fontWeight:600,cursor:"pointer"}}>Upgrade</button></>)}
